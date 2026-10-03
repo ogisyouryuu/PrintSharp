@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- NuGet -->
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>PrintSharp.Pdf</PackageId>
+		<Version>0.1.0</Version>
+
+		<Title>PrintSharp.Pdf</Title>
+		<Description>
+			PDF renderer and Fluent document export extensions for PrintSharp using PDFsharp.
+		</Description>
+
+		<Authors>ogisyouryuu</Authors>
+		<PackageTags>printing;pdf;pdfsharp;document;report</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="PDFsharp" Version="6.2.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
+	</ItemGroup>
+
+</Project>

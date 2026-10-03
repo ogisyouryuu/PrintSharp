@@ -1,8 +1,5 @@
 using ClosedXML.Excel;
-using PrintSharp.Cells;
 using PrintSharp.Documents;
-using PrintSharp.Excel;
-using PrintSharp.Fluent;
 using PrintSharp.Styles;
 using Xunit;
 

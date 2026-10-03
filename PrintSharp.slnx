@@ -1,10 +1,12 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <Project Path="src/PrintSharp/PrintSharp.csproj" />
     <Project Path="src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PrintSharp.Tests/PrintSharp.Tests.csproj" />
     <Project Path="tests/PrintSharp.Excel.Tests/PrintSharp.Excel.Tests.csproj" />
+    <Project Path="tests/PrintSharp.Pdf.Tests/PrintSharp.Pdf.Tests.csproj" />
   </Folder>
 </Solution>
