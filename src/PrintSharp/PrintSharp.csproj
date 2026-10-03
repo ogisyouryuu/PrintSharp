@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- NuGet -->
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>PrintSharp</PackageId>
+		<Version>0.1.0</Version>
+
+		<Title>PrintSharp</Title>
+		<Description>
+			A .NET library for exporting and printing documents to Excel, PDF, and printers.
+		</Description>
+
+		<Authors>ogisyouryuu</Authors>
+		<PackageTags>printing;excel;pdf;document;report</PackageTags>
+
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+		<!-- Source Link / debugging -->
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+		<!-- NuGet symbols -->
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md"
+			  Pack="true"
+			  PackagePath="\" />
+	</ItemGroup>
+
+</Project>

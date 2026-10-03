@@ -1,0 +1,11 @@
+# .gitignore for .NET projects
+.vs/
+bin/
+obj/
+*.user
+*.suo
+.vscode/
+*.nupkg
+*.snupkg
+*.log
+*.userosscache
