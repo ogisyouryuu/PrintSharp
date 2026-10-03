@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- NuGet -->
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>PrintSharp.Excel</PackageId>
+		<Version>0.1.0</Version>
+
+		<Title>PrintSharp.Excel</Title>
+		<Description>
+			Excel renderer and template parser for PrintSharp using ClosedXML.
+		</Description>
+
+		<Authors>ogisyouryuu</Authors>
+		<PackageTags>printing;excel;closedxml;document;report</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="ClosedXML" Version="0.105.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
+	</ItemGroup>
+
+</Project>
