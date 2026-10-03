@@ -3,10 +3,12 @@
     <Project Path="src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <Project Path="src/PrintSharp/PrintSharp.csproj" />
     <Project Path="src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
+    <Project Path="src/PrintSharp.Windows/PrintSharp.Windows.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PrintSharp.Tests/PrintSharp.Tests.csproj" />
     <Project Path="tests/PrintSharp.Excel.Tests/PrintSharp.Excel.Tests.csproj" />
     <Project Path="tests/PrintSharp.Pdf.Tests/PrintSharp.Pdf.Tests.csproj" />
+    <Project Path="tests/PrintSharp.Windows.Tests/PrintSharp.Windows.Tests.csproj" />
   </Folder>
 </Solution>

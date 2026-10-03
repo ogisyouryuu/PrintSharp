@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>PrintSharp.Windows</PackageId>
+		<Version>0.1.0</Version>
+		<Title>PrintSharp.Windows</Title>
+		<Description>Windows PrintDocument renderer and Fluent printing extensions for PrintSharp.</Description>
+		<Authors>ogisyouryuu</Authors>
+		<PackageTags>printing;windows;document;report</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
+	</ItemGroup>
+
+</Project>
