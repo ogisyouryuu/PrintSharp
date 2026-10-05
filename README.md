@@ -164,3 +164,11 @@ The solution includes unit tests for the core grid/layout model, fluent API, sty
 ## License
 
 Distributed under the [MIT License](LICENSE).
+
+## Windows Forms demo
+
+The [WinForms demo](demos/PrintSharp.WinForms.Demo/README.md) includes an editable 100-row DataGridView, code-built and Excel-template reports, Japanese hotel receipts and invoices, Excel/PDF export, and an embedded Windows print preview. Run it on Windows with:
+
+```bash
+dotnet run --project demos/PrintSharp.WinForms.Demo
+```

@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/demos/">
+    <Project Path="demos/PrintSharp.WinForms.Demo/PrintSharp.WinForms.Demo.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <Project Path="src/PrintSharp/PrintSharp.csproj" />

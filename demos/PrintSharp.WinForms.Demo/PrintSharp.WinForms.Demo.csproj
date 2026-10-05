@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Windows/PrintSharp.Windows.csproj" />
+    <Content Include="Templates/*.xlsx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
