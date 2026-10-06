@@ -93,7 +93,6 @@ internal static class ResolverEmitter
         builder.AppendLine("    public object? Resolve(object? data, string path)");
         builder.AppendLine("    {");
         builder.AppendLine("        if (data is null || string.IsNullOrWhiteSpace(path)) return null;");
-        builder.AppendLine("        var normalizedPath = path.ToUpperInvariant();");
 
         foreach (var handler in handlers)
         {
@@ -101,16 +100,16 @@ internal static class ResolverEmitter
             var variableName = "typedData" + handlers.IndexOf(handler);
             builder.Append("        if (data is ").Append(typeName).Append(' ').Append(variableName).AppendLine(")");
             builder.AppendLine("        {");
-            builder.AppendLine("            return normalizedPath switch");
-            builder.AppendLine("            {");
             foreach (var entry in handler.Entries)
             {
-                var path = entry.Path.ToUpperInvariant().Replace("\\", "\\\\").Replace("\"", "\\\"");
+                var path = entry.Path.Replace("\\", "\\\\").Replace("\"", "\\\"");
                 var expression = BuildAccessExpression(variableName, handler.Type, entry.Members, 0);
-                builder.Append("                \"").Append(path).Append("\" => (object?)(").Append(expression).AppendLine("),");
+                builder.Append("            if (global::System.String.Equals(path, \"")
+                    .Append(path)
+                    .Append("\", global::System.StringComparison.OrdinalIgnoreCase)) return (object?)(")
+                    .Append(expression).AppendLine(");");
             }
-            builder.AppendLine("                _ => null");
-            builder.AppendLine("            };");
+            builder.AppendLine("            return null;");
             builder.AppendLine("        }");
         }
 

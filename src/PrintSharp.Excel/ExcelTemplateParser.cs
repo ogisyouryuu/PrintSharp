@@ -26,9 +26,9 @@ public sealed partial class ExcelTemplateParser
     public static ExcelTemplateParser Instance { get; } = new();
 
     /// <summary>
-    /// Creates an Excel template parser with the specified value resolver.
+    /// 指定した値 Resolver を使用する Excel テンプレート解析器を作成します。
     /// </summary>
-    /// <param name="valueResolver">Resolver used to access template data, or <see langword="null"/> for the default POCO and dictionary resolver.</param>
+    /// <param name="valueResolver">テンプレート データのアクセスに使用する Resolver。<see langword="null"/> の場合は既定の POCO / Dictionary Resolver を使用します。</param>
     public ExcelTemplateParser(ITemplateValueResolver? valueResolver = null)
     {
         _valueResolver = valueResolver ?? new DefaultTemplateValueResolver();
@@ -227,7 +227,17 @@ public sealed partial class ExcelTemplateParser
     /// <returns>填充数据后的网格文档。</returns>
     public Document Render(Stream templateStream, object? data, ExcelRenderOptions? options = null)
     {
-        var compiledTemplate = CompileTemplate(Parse(templateStream, options));
+        var compiledTemplate = CompileTemplate(templateStream, options);
+        return Render(compiledTemplate, data, options);
+    }
+
+    internal CompiledTemplate CompileTemplate(Stream templateStream, ExcelRenderOptions? options = null)
+    {
+        return CompileTemplate(Parse(templateStream, options));
+    }
+
+    internal Document Render(CompiledTemplate compiledTemplate, object? data, ExcelRenderOptions? options = null)
+    {
         if (data is null) return compiledTemplate.Document;
 
         var renderedDoc = new Document

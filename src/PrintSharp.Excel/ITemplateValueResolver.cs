@@ -1,15 +1,15 @@
 namespace PrintSharp.Excel;
 
 /// <summary>
-/// Resolves a value from a template data object using a dotted property path.
+/// テンプレート データからドット区切りのパスで値を解決します。
 /// </summary>
 public interface ITemplateValueResolver
 {
     /// <summary>
-    /// Resolves the value identified by <paramref name="path"/> from <paramref name="data"/>.
+    /// <paramref name="data"/> から <paramref name="path"/> で指定された値を解決します。
     /// </summary>
-    /// <param name="data">The root template data object.</param>
-    /// <param name="path">A property path such as <c>Customer.Name</c>.</param>
-    /// <returns>The resolved value, or <see langword="null"/> when the path is missing or a segment is null.</returns>
+    /// <param name="data">テンプレート データのルート オブジェクト。</param>
+    /// <param name="path"><c>Customer.Name</c> のようなプロパティ パス。</param>
+    /// <returns>解決した値。パスが存在しない場合、または途中の値が null の場合は <see langword="null"/>。</returns>
     object? Resolve(object? data, string path);
 }

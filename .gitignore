@@ -9,3 +9,4 @@ obj/
 *.snupkg
 *.log
 *.userosscache
+BenchmarkDotNet.Artifacts/

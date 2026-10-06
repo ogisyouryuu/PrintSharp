@@ -10,11 +10,17 @@ public sealed class ExcelTemplate<TData>
 {
     private readonly byte[] _templateBytes;
     private readonly ExcelRenderOptions? _options;
+    private readonly ExcelTemplateParser _parser;
+    private readonly CompiledTemplate _compiledTemplate;
 
     private ExcelTemplate(byte[] templateBytes, ExcelRenderOptions? options)
     {
         _templateBytes = templateBytes;
         _options = options;
+        var resolver = TemplateValueResolverRegistry<TData>.Resolver;
+        _parser = resolver is null ? ExcelTemplateParser.Instance : new ExcelTemplateParser(resolver);
+        using var stream = new MemoryStream(_templateBytes, writable: false);
+        _compiledTemplate = _parser.CompileTemplate(stream, _options);
     }
 
     /// <summary>
@@ -53,9 +59,13 @@ public sealed class ExcelTemplate<TData>
     /// <returns>レンダリングされたドキュメント。</returns>
     public Document Render(TData data, ExcelRenderOptions? options = null)
     {
-        using var stream = new MemoryStream(_templateBytes, writable: false);
-        var resolver = TemplateValueResolverRegistry<TData>.Resolver;
-        var parser = resolver is null ? ExcelTemplateParser.Instance : new ExcelTemplateParser(resolver);
-        return parser.Render(stream, data, options ?? _options);
+        if (options is not null && options != _options)
+        {
+            using var stream = new MemoryStream(_templateBytes, writable: false);
+            var compiledTemplate = _parser.CompileTemplate(stream, options);
+            return _parser.Render(compiledTemplate, data, options);
+        }
+
+        return _parser.Render(_compiledTemplate, data, _options);
     }
 }

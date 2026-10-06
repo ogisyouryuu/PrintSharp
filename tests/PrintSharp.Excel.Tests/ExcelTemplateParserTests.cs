@@ -18,6 +18,7 @@ public sealed class GeneratedInvoiceData
 public sealed class GeneratedCustomerData
 {
     public string Name { get; init; } = string.Empty;
+    public string Address { get; init; } = string.Empty;
 }
 
 public sealed class GeneratedItemData
@@ -128,12 +129,13 @@ public class ExcelTemplateParserTests
         var resolver = new GeneratedInvoiceDataTemplateValueResolver();
         var data = new GeneratedInvoiceData
         {
-            Customer = new GeneratedCustomerData { Name = "Taro" },
+            Customer = new GeneratedCustomerData { Name = "Taro", Address = "Tokyo" },
             Total = 12.5m,
             Items = new List<GeneratedItemData> { new() { Name = "Item A" } }
         };
 
         Assert.Equal("Taro", resolver.Resolve(data, "customer.name"));
+        Assert.Equal("Tokyo", resolver.Resolve(data, "Customer.Address"));
         Assert.Equal(12.5m, resolver.Resolve(data, "Total"));
         Assert.Equal(data.Items, resolver.Resolve(data, "Items"));
         Assert.Equal("Item A", resolver.Resolve(data.Items[0], "Name"));
@@ -146,6 +148,7 @@ public class ExcelTemplateParserTests
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Sheet1");
         worksheet.Cell("A1").Value = "{{Customer.Name}}";
+        worksheet.Cell("B1").Value = "住所：{{Customer.Address}}";
         worksheet.Cell("A2").Value = "{{Items.Name}}";
         worksheet.Cell("B2").Value = "{{Total}}";
         using var template = new MemoryStream();
@@ -154,7 +157,7 @@ public class ExcelTemplateParserTests
 
         var data = new GeneratedInvoiceData
         {
-            Customer = new GeneratedCustomerData { Name = "Taro" },
+            Customer = new GeneratedCustomerData { Name = "Taro", Address = "Tokyo" },
             Total = 12.5m,
             Items = new List<GeneratedItemData> { new() { Name = "Item A" }, new() { Name = "Item B" } }
         };
@@ -163,6 +166,7 @@ public class ExcelTemplateParserTests
         var document = parser.Render(template, data);
 
         Assert.Equal("Taro", document.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("住所：Tokyo", document.DefaultPage.FindCell(0, 1)?.Value);
         Assert.Equal("Item A", document.DefaultPage.FindCell(1, 0)?.Value);
         Assert.Equal("12.5", document.DefaultPage.FindCell(1, 1)?.Value);
         Assert.Equal("Item B", document.DefaultPage.FindCell(2, 0)?.Value);
@@ -191,6 +195,29 @@ public class ExcelTemplateParserTests
         Assert.IsType<GeneratedInvoiceDataTemplateValueResolver>(TemplateValueResolverRegistry<GeneratedInvoiceData>.Resolver);
         Assert.Equal("Hanako", document.DefaultPage.FindCell(0, 0)?.Value);
         Assert.Equal("Generated Item", document.DefaultPage.FindCell(1, 0)?.Value);
+    }
+
+    [Fact]
+    public void ExcelTemplateOfT_ShouldReuseCompiledTemplateAcrossRenderCalls()
+    {
+        using var workbook = new XLWorkbook();
+        workbook.Worksheets.Add("Sheet1").Cell("A1").Value = "{{Customer.Name}}";
+        using var templateStream = new MemoryStream();
+        workbook.SaveAs(templateStream);
+        templateStream.Position = 0;
+
+        var template = ExcelTemplate<GeneratedInvoiceData>.Load(templateStream);
+        var first = template.Render(new GeneratedInvoiceData
+        {
+            Customer = new GeneratedCustomerData { Name = "First" }
+        });
+        var second = template.Render(new GeneratedInvoiceData
+        {
+            Customer = new GeneratedCustomerData { Name = "Second" }
+        });
+
+        Assert.Equal("First", first.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("Second", second.DefaultPage.FindCell(0, 0)?.Value);
     }
 
     [Fact]

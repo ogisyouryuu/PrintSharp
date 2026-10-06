@@ -3,7 +3,7 @@ using System.Reflection;
 namespace PrintSharp.Excel;
 
 /// <summary>
-/// Resolves public instance properties and fields for dynamic POCO compatibility.
+/// 動的な POCO との互換性のため、公開インスタンス プロパティとフィールドを Reflection で解決します。
 /// </summary>
 public sealed class ReflectionValueResolver : ITemplateValueResolver, ICompiledTemplateValueResolver
 {

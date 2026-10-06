@@ -3,7 +3,7 @@ using System.Collections;
 namespace PrintSharp.Excel;
 
 /// <summary>
-/// Resolves dotted paths in generic and non-generic dictionaries without reflection.
+/// Reflection を使用せず、ジェネリックおよび非ジェネリック Dictionary のパスを解決します。
 /// </summary>
 public sealed class DictionaryValueResolver : ITemplateValueResolver, ICompiledTemplateValueResolver
 {
