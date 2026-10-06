@@ -8,6 +8,8 @@ namespace PrintSharp.Fluent;
 /// </summary>
 public static class DocumentExtensions
 {
+    /// <summary>生成已分页的物理页文档，不修改原始逻辑页面。</summary>
+    public static Document Paginate(this Document document) => DocumentPaginator.Instance.Paginate(document);
     /// <summary>
     /// 计算指定文档的物理排版结果。
     /// </summary>

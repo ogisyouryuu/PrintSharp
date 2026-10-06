@@ -17,6 +17,9 @@ public sealed class CalculatedDocumentLayout
     /// </summary>
     public IReadOnlyList<CalculatedPageLayout> Pages { get; }
 
+    /// <summary>布局结果的物理总页数，可能大于原始文档的逻辑页数。</summary>
+    public int PageCount => Pages.Count;
+
     /// <summary>
     /// 获取默认页面的排版计算结果。
     /// </summary>

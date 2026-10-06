@@ -165,6 +165,44 @@ dotnet test PrintSharp.slnx
 
 基于 [MIT License](LICENSE) 发布。
 
+## 报表自动分页
+
+自动分页是显式启用的追加功能。既有 `Table()`、模板 `Render()` 和手动创建的页面保持原有行为。
+先在页面上配置纸张、余白和列宽，再定义重复页头、明细和重复页尾：
+
+```csharp
+using PrintSharp.Documents;
+using PrintSharp.Fluent;
+
+int[] items = Enumerable.Range(1, 100).ToArray();
+var document = Document.Create(d => d.Page(p => p
+    .Settings(s => s.PaperKind(PaperKind.A4).Margins(24))
+    .Columns(100)
+    .Report(r => r
+        .Header(h => h.Row(30, row => row.Cell("编号")))
+        .Body(items, 24, (row, item) => row.Cell(item))
+        .Footer(f => f.Row(30, row => row.Cell(new PageValue(ctx =>
+            $"{ctx.CurrentPageNumber} / {ctx.PageCount}")))))));
+
+int logicalPages = document.PageCount;
+int physicalPages = document.CalculateLayout().PageCount;
+Document physicalDocument = document.Paginate();
+```
+
+每个区域的行索引从 0 开始。`Body(Action<PageBuilder>)` 也支持不同的行高和合并单元格。
+已有网格可直接使用 `p.Paginate(headerRowCount: 3, footerRowCount: 1)`，声明页头、页尾行数。
+PDF、Windows 打印和 Excel 导出时自动分页；Excel 每个物理页生成一个工作表。
+原始文档不变。`PageValue` 在整个文档分页结束后求值；`BodyRowOffset` 和 `BodyRowCount` 表示当前页明细网格的行范围，一条记录对应一行时可直接用来计算每页小计。
+
+Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settings)` 启用分页。
+每个工作表须包含一行 `Items`（或指定集合名称）的重复明细，之前和之后的行分别作为重复页头、页尾。
+`PageValue` 同时支持独立占位符、文本内嵌占位符和 DataSet 汇总表中的值。
+
+分页按定义的实际行高计算，先预留页头、页尾高度，再填入完整明细行。跨行合并的行组整体换页。
+行组超过整页可用高度、合并单元格跨越区域边界、列宽超过可打印宽度时明确报错。
+自定义纸张须提供正的宽高。暂不根据文本折行自动测量行高；页尾紧随明细，末页不拉伸行高。
+
+
 ## 纸张与页数
 
 通过 `page.Settings = new PageSettings { PaperKind = PaperKind.A4 }` 选择纸张，

@@ -35,6 +35,12 @@ public sealed class Page
     /// </summary>
     public PageSettings Settings { get; set; } = PageSettings.Default;
 
+    /// <summary>自动分页定义；null 保留既有单页行为。</summary>
+    public PaginationSettings? Pagination { get; set; }
+
+    /// <summary>生成的物理页上下文；原始逻辑页面为 null。</summary>
+    public PageContext? Context { get; internal set; }
+
     /// <summary>
     /// 获取该页面已显式定义的行集合。
     /// </summary>

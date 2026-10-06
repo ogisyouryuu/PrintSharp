@@ -146,6 +146,45 @@ A5、B5、A4、B4、A3、Customer に対応しています。B 系列は ISO 規
 `page.CurrentPageNumber` は `page.PageNumber` と同期し、`document.PageCount` は現在のページ数／ワークシート数を返します。
 この数には、プリンターがワークシートを自動的に分割して生成する追加の印刷ページは含まれません。
 
+## 帳票の自動改ページ
+
+自動改ページは明示的に有効化する追加機能です。既存の `Table()`、テンプレートの `Render()`、手動で作成したページは従来どおり動作します。
+用紙、余白、列幅をページに設定し、繰り返すヘッダー、明細、フッターを定義します。
+
+```csharp
+using PrintSharp.Documents;
+using PrintSharp.Fluent;
+
+int[] items = Enumerable.Range(1, 100).ToArray();
+var document = Document.Create(d => d.Page(p => p
+    .Settings(s => s.PaperKind(PaperKind.A4).Margins(24))
+    .Columns(100)
+    .Report(r => r
+        .Header(h => h.Row(30, row => row.Cell("番号")))
+        .Body(items, 24, (row, item) => row.Cell(item))
+        .Footer(f => f.Row(30, row => row.Cell(new PageValue(ctx =>
+            $"{ctx.CurrentPageNumber} / {ctx.PageCount}")))))));
+
+int logicalPages = document.PageCount;
+int physicalPages = document.CalculateLayout().PageCount;
+Document physicalDocument = document.Paginate();
+```
+
+各領域の行インデックスは 0 から始まります。`Body(Action<PageBuilder>)` では異なる行高や結合セルも定義できます。
+既存のグリッドには `p.Paginate(headerRowCount: 3, footerRowCount: 1)` で自動改ページを追加できます。
+PDF、Windows 印刷、Excel 出力時に自動的に改ページし、Excel では物理ページごとにワークシートを作成します。
+元のドキュメントは変更しません。`PageValue` は全ページ確定後に評価されます。
+`BodyRowOffset` と `BodyRowCount` はそのページの明細グリッドの行範囲を示し、1 レコード = 1 行の場合は小計の対象レコード範囲として使用できます。
+
+Excel テンプレートは `ExcelTemplateParser.Instance.RenderReport(path, data, settings)` で有効化できます。
+各シートに `Items`（または指定したコレクション名）の繰り返し行を一行定義し、前後の行をヘッダーとフッターとして繰り返します。
+`PageValue` は単独のプレースホルダー、文章内のプレースホルダー、DataSet の集計テーブル内の値に対応します。
+
+定義済みの行高を使用し、ヘッダーとフッターの高さを先に確保してから明細を行単位で配置します。
+縦結合した行は一緒に改ページします。行グループが印刷領域に収まらない場合、結合が領域境界を跨ぐ場合、列幅が印刷領域を超える場合はエラーになります。
+任意の用紙には正の幅と高さが必要です。折り返した文字に応じた行高の自動測定は行いません。フッターは明細の直後に配置し、最終ページの行高は引き伸ばしません。
+
+
 ## パッケージ
 
 | パッケージ | 目的 | 主な依存関係 |

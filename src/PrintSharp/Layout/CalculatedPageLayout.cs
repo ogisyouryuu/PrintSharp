@@ -12,6 +12,9 @@ public sealed class CalculatedPageLayout
     /// </summary>
     public Page Page { get; }
 
+    /// <summary>该物理页所属的原始逻辑页面。</summary>
+    public Page SourcePage => Page.Context?.SourcePage ?? Page;
+
     /// <summary>
     /// 获取网格内容区域的总逻辑宽度。
     /// </summary>

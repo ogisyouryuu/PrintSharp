@@ -6,6 +6,19 @@ namespace PrintSharp.Pdf.Tests;
 public sealed class PdfSharpRendererTests
 {
     [Fact]
+    public void AutomaticPagination_ExportsPhysicalPagesWithoutMutatingLogicalDocument()
+    {
+        var document = Document.Create(d => d.Page(p => p
+            .Settings(s => s.PaperKind(PaperKind.A5).Margins(10))
+            .Rows(Enumerable.Repeat(100f, 10).ToArray())
+            .Paginate()));
+        using var pdf = document.ToPdfDocument();
+        Assert.Equal(2, pdf.PageCount);
+        Assert.Equal(1, document.PageCount);
+        Assert.Equal(148 * 72d / 25.4, pdf.Pages[0].Width.Point, 2);
+        Assert.Equal(210 * 72d / 25.4, pdf.Pages[0].Height.Point, 2);
+    }
+    [Fact]
     public void ToPdfBytes_ReturnsPdfFile()
     {
         var document = new Document();

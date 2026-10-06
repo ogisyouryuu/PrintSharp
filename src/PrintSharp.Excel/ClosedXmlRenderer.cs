@@ -40,7 +40,7 @@ public sealed class ClosedXmlRenderer
             workbook.Properties.Keywords = document.Metadata.Keywords;
 
         // 渲染各个页面（Worksheet）
-        foreach (var page in document.Pages)
+        foreach (var page in PrintSharp.Layout.DocumentPaginator.Instance.Paginate(document).Pages)
         {
             RenderPageToWorksheet(page, workbook, options);
         }
@@ -119,6 +119,17 @@ public sealed class ClosedXmlRenderer
         ws.PageSetup.PageOrientation = page.Settings.Orientation == PageOrientation.Landscape
             ? XLPageOrientation.Landscape
             : XLPageOrientation.Portrait;
+
+        if (page.Context?.SourcePage.Pagination is not null)
+        {
+            var margins = page.Settings.Margins;
+            ws.PageSetup.Margins.Left = margins.Left / 72d;
+            ws.PageSetup.Margins.Right = margins.Right / 72d;
+            ws.PageSetup.Margins.Top = margins.Top / 72d;
+            ws.PageSetup.Margins.Bottom = margins.Bottom / 72d;
+            ws.PageSetup.PagesWide = 1;
+            ws.PageSetup.PagesTall = 1;
+        }
 
         // 设置列宽
         foreach (var col in page.Columns)

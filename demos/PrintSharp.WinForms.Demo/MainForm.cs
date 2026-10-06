@@ -25,7 +25,7 @@ public sealed class MainForm : Form
         MinimumSize = new Size(1000, 650);
         Font = new Font("Microsoft YaHei UI", 9);
         var tools = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(8), WrapContents = true };
-        _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）", "5. DataSet 数据绑定"]);
+        _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）", "5. DataSet 数据绑定", "6. 自动分页报表（不同明细行高）"]);
         _report.SelectedIndex = 0;
         tools.Controls.Add(_report);
         AddButton(tools, "导出 Excel", () => Export(false));
@@ -107,7 +107,7 @@ public sealed class MainForm : Form
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         if (pdf) document.SaveAsPdf(dialog.FileName);
         else document.SaveAsExcel(dialog.FileName);
-        _status.Text = $"已导出 {document.Pages.Count} 页：{dialog.FileName}";
+        _status.Text = $"已导出 {PrintSharp.Layout.GridLayoutEngine.Instance.CalculateDocument(document).PageCount} 页：{dialog.FileName}";
     }
 
     private void GeneratePreview()
@@ -124,10 +124,11 @@ public sealed class MainForm : Form
         ClearPreview();
         _printDocument = next;
         _preview.Document = next;
-        _page.Maximum = document.Pages.Count;
+        int pageCount = PrintSharp.Layout.GridLayoutEngine.Instance.CalculateDocument(document).PageCount;
+        _page.Maximum = pageCount;
         _page.Value = 1;
         _preview.InvalidatePreview();
-        _status.Text = $"已生成 {document.Pages.Count} 页预览；打印按钮仅预览。";
+        _status.Text = $"已生成 {pageCount} 页预览；打印按钮仅预览。";
     }
 
     private void ClearPreview()

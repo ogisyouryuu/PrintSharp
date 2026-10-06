@@ -21,7 +21,7 @@ public sealed class GridLayoutEngine : ILayoutEngine
         ArgumentNullException.ThrowIfNull(document);
 
         var calculatedPages = new List<CalculatedPageLayout>(document.Pages.Count);
-        foreach (var page in document.Pages)
+        foreach (var page in DocumentPaginator.Instance.Paginate(document).Pages)
         {
             calculatedPages.Add(CalculatePage(page));
         }

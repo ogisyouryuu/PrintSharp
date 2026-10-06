@@ -1,6 +1,7 @@
 using PrintSharp.Cells;
 using PrintSharp.Documents;
 using PrintSharp.Styles;
+using PrintSharp.Layout;
 
 namespace PrintSharp.Fluent;
 
@@ -9,6 +10,25 @@ namespace PrintSharp.Fluent;
 /// </summary>
 public sealed class PageBuilder
 {
+    /// <summary>在空逻辑页面上定义自动分页报表；先设置纸张、余白和列宽。</summary>
+    public PageBuilder Report(Action<ReportBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var report = new ReportBuilder(_page);
+        configure(report);
+        report.Build();
+        _currentRowCursor = DocumentPaginator.GetRowCount(_page);
+        return this;
+    }
+
+    /// <summary>对现有网格启用自动分页，页头与页尾每页重复。</summary>
+    public PageBuilder Paginate(int headerRowCount = 0, int footerRowCount = 0)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(headerRowCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(footerRowCount);
+        _page.Pagination = new PaginationSettings { HeaderRowCount = headerRowCount, FooterRowCount = footerRowCount };
+        return this;
+    }
     private readonly Page _page;
     private int _currentRowCursor;
 

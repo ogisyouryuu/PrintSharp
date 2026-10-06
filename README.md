@@ -149,6 +149,44 @@ For custom dimensions, use `s.Size(300, 400)`, which selects Customer. The defau
 `page.CurrentPageNumber` stays synchronized with `page.PageNumber`, and `document.PageCount` returns the current number of pages or worksheets.
 This count does not include additional physical pages created when a printer automatically paginates a worksheet.
 
+## Automatic report pagination
+
+Automatic pagination is opt-in. Existing `Table()` calls, `Render()` template binding, and manually created pages keep their behavior.
+Configure paper, margins, and columns on the page, then declare repeated headers, body rows, and repeated footers:
+
+```csharp
+using PrintSharp.Documents;
+using PrintSharp.Fluent;
+
+int[] items = Enumerable.Range(1, 100).ToArray();
+var document = Document.Create(d => d.Page(p => p
+    .Settings(s => s.PaperKind(PaperKind.A4).Margins(24))
+    .Columns(100)
+    .Report(r => r
+        .Header(h => h.Row(30, row => row.Cell("Number")))
+        .Body(items, 24, (row, item) => row.Cell(item))
+        .Footer(f => f.Row(30, row => row.Cell(new PageValue(ctx =>
+            $"{ctx.CurrentPageNumber} / {ctx.PageCount}")))))));
+
+int logicalPages = document.PageCount;
+int physicalPages = document.CalculateLayout().PageCount;
+Document physicalDocument = document.Paginate();
+```
+
+Each section uses local row indices starting at zero. `Body(Action<PageBuilder>)` also supports variable row heights and merged cells.
+For an existing grid, call `p.Paginate(headerRowCount: 3, footerRowCount: 1)` instead.
+PDF, Windows printing, and Excel export paginate automatically; Excel uses one worksheet per physical page.
+The source document remains unchanged. `PageValue` resolves after all pages are known; `BodyRowOffset` and `BodyRowCount` identify the current page's body grid rows for subtotals. With one row per record, these also identify the record range.
+
+Excel templates can opt in with `ExcelTemplateParser.Instance.RenderReport(path, data, settings)`.
+Each worksheet must contain one repeating `Items` row (or the collection name supplied to `RenderReport`). Rows above and below it repeat as headers and footers.
+`PageValue` works in both standalone and embedded template placeholders, including values stored in DataSet summary tables.
+
+Pagination uses defined row heights and reserves header/footer height before placing complete body rows.
+Merged row groups stay together. A group larger than the available height, a merge crossing section boundaries, or columns exceeding printable width produces an error.
+Custom paper requires positive width and height. Text wrapping does not automatically measure or increase row height; footers follow the body without stretching the final page.
+
+
 ## Packages
 
 | Package | Purpose | Primary dependency |

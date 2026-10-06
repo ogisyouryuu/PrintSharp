@@ -254,6 +254,39 @@ public sealed partial class ExcelTemplateParser
         return renderedDoc;
     }
 
+    /// <summary>
+    /// 绑定完整数据集合并启用自动报表分页。每个工作表须包含一行集合明细，之前/之后的行分别作为重复页头/页尾。
+    /// </summary>
+    public Document RenderReport(string templatePath, object data, PageSettings settings,
+        string collectionName = "Items", ExcelRenderOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentException.ThrowIfNullOrWhiteSpace(collectionName);
+        var compiled = CompileTemplate(Parse(templatePath, options));
+        var definitions = new List<PaginationSettings>();
+        foreach (var page in compiled.Pages)
+        {
+            var collections = page.Rows.Select(r => (Row: r.Key, Collection: FindCollectionReference(r.Value, data)))
+                .Where(r => r.Collection is not null).ToArray();
+            var repeated = collections.Where(r => r.Collection!.Value.CollectionName == collectionName).ToArray();
+            if (repeated.Length != 1 || collections.Any(r => r.Collection!.Value.CollectionName != collectionName &&
+                r.Collection.Value.Items.Take(2).Count() != 1))
+                throw new InvalidOperationException("A report template must contain exactly one repeating row for the specified collection per worksheet.");
+            int row = repeated[0].Row;
+            if (page.Page.Cells.Any(c => c.Row <= row && c.Row + c.RowSpan > row && c.RowSpan > 1))
+                throw new InvalidOperationException("A report template's repeating row cannot participate in a vertical merged cell.");
+            definitions.Add(new PaginationSettings { HeaderRowCount = row, FooterRowCount = page.MaxRow - row });
+        }
+        var document = Render(compiled, data, options);
+        for (int i = 0; i < document.Pages.Count; i++)
+        {
+            document.Pages[i].Settings = settings;
+            document.Pages[i].Pagination = definitions[i];
+        }
+        return document;
+    }
+
     private static CompiledTemplate CompileTemplate(Document document)
     {
         var registry = new TemplateBindingRegistry();
@@ -436,12 +469,12 @@ public sealed partial class ExcelTemplateParser
             }
             else
             {
-                var builder = new System.Text.StringBuilder();
+                var values = new List<object?>();
                 foreach (var part in compiledCell.Parts)
                 {
                     if (part.Literal is not null)
                     {
-                        builder.Append(part.Literal);
+                        values.Add(part.Literal);
                         continue;
                     }
 
@@ -454,10 +487,10 @@ public sealed partial class ExcelTemplateParser
                         string.Equals(part.CollectionRootBinding?.Path, collectionName, StringComparison.Ordinal);
                     var binding = useItemBinding ? part.ItemBinding! : part.Binding;
                     var value = ResolveBinding(useItemBinding ? item : rootData, binding);
-                    builder.Append(value?.ToString() ?? string.Empty);
+                    values.Add(value);
                 }
 
-                val = builder.ToString();
+                val = ComposeValues(values);
             }
         }
 
@@ -477,24 +510,32 @@ public sealed partial class ExcelTemplateParser
             }
             else
             {
-                var builder = new System.Text.StringBuilder();
+                var values = new List<object?>();
                 foreach (var part in compiledCell.Parts)
                 {
                     if (part.Literal is not null)
                     {
-                        builder.Append(part.Literal);
+                        values.Add(part.Literal);
                     }
                     else if (part.Binding is not null)
                     {
-                        builder.Append(ResolveBinding(rootData, part.Binding)?.ToString() ?? string.Empty);
+                        values.Add(ResolveBinding(rootData, part.Binding));
                     }
                 }
 
-                val = builder.ToString();
+                val = ComposeValues(values);
             }
         }
 
         return new Cell(targetRow, cell.Column, val, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
+    }
+
+    private static object ComposeValues(IReadOnlyList<object?> values)
+    {
+        if (values.Any(v => v is PageValue))
+            return new PageValue(context => string.Concat(values.Select(v =>
+                (v is PageValue pageValue ? pageValue.Resolve(context) : v)?.ToString() ?? string.Empty)));
+        return string.Concat(values.Select(v => v?.ToString() ?? string.Empty));
     }
 
     private object? ResolveBinding(object? data, TemplateBinding binding)
