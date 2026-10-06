@@ -227,26 +227,95 @@ public sealed partial class ExcelTemplateParser
     /// <returns>填充数据后的网格文档。</returns>
     public Document Render(Stream templateStream, object? data, ExcelRenderOptions? options = null)
     {
-        var rawDoc = Parse(templateStream, options);
-        if (data is null) return rawDoc;
+        var compiledTemplate = CompileTemplate(Parse(templateStream, options));
+        if (data is null) return compiledTemplate.Document;
 
         var renderedDoc = new Document
         {
-            Metadata = rawDoc.Metadata
+            Metadata = compiledTemplate.Document.Metadata
         };
         renderedDoc.Pages.Clear();
 
-        foreach (var rawPage in rawDoc.Pages)
+        foreach (var compiledPage in compiledTemplate.Pages)
         {
-            var renderedPage = RenderPageData(rawPage, data);
+            var renderedPage = RenderPageData(compiledPage, data);
             renderedDoc.Pages.Add(renderedPage);
         }
 
         return renderedDoc;
     }
 
-    private Page RenderPageData(Page templatePage, object data)
+    private static CompiledTemplate CompileTemplate(Document document)
     {
+        var registry = new TemplateBindingRegistry();
+        var pages = new List<CompiledPage>(document.Pages.Count);
+
+        foreach (var page in document.Pages)
+        {
+            var rows = page.Cells
+                .GroupBy(cell => cell.Row)
+                .ToDictionary(
+                    group => group.Key,
+                    group => (IReadOnlyList<CompiledCell>)group
+                        .Select(cell => CompileCell(cell, registry))
+                        .ToArray());
+            pages.Add(new CompiledPage(page, rows));
+        }
+
+        return new CompiledTemplate(document, pages);
+    }
+
+    private static CompiledCell CompileCell(Cell cell, TemplateBindingRegistry registry)
+    {
+        if (cell.Value is not string text || !text.Contains("{{", StringComparison.Ordinal))
+        {
+            return new CompiledCell(cell, null, Array.Empty<CompiledTemplatePart>());
+        }
+
+        var trimmedText = text.Trim();
+        var singleMatch = PlaceholderRegex.Match(trimmedText);
+        TemplateBinding? singleBinding = null;
+        if (singleMatch.Success && singleMatch.Value == trimmedText)
+        {
+            singleBinding = registry.GetOrAdd(singleMatch.Groups[1].Value.Trim());
+        }
+
+        var parts = new List<CompiledTemplatePart>();
+        var matches = PlaceholderRegex.Matches(text);
+        var currentIndex = 0;
+        foreach (Match match in matches)
+        {
+            if (match.Index > currentIndex)
+            {
+                parts.Add(new CompiledTemplatePart(
+                    text[currentIndex..match.Index], null, null, null));
+            }
+
+            var path = match.Groups[1].Value.Trim();
+            var binding = registry.GetOrAdd(path);
+            TemplateBinding? collectionRootBinding = null;
+            TemplateBinding? itemBinding = null;
+            if (binding.Segments.Length > 1)
+            {
+                collectionRootBinding = registry.GetOrAdd(binding.Segments[0]);
+                itemBinding = registry.GetOrAdd(string.Join('.', binding.Segments.Skip(1)));
+            }
+
+            parts.Add(new CompiledTemplatePart(null, binding, collectionRootBinding, itemBinding));
+            currentIndex = match.Index + match.Length;
+        }
+
+        if (currentIndex < text.Length)
+        {
+            parts.Add(new CompiledTemplatePart(text[currentIndex..], null, null, null));
+        }
+
+        return new CompiledCell(cell, singleBinding, parts);
+    }
+
+    private Page RenderPageData(CompiledPage compiledPage, object data)
+    {
+        var templatePage = compiledPage.Page;
         var newPage = new Page(templatePage.Name, templatePage.PageNumber)
         {
             Settings = templatePage.Settings
@@ -259,16 +328,14 @@ public sealed partial class ExcelTemplateParser
         }
 
         // 分组单元格按行处理
-        var rowGroups = templatePage.Cells.GroupBy(c => c.Row).OrderBy(g => g.Key).ToList();
         var rowLookup = templatePage.Rows.ToDictionary(r => r.Index);
 
         int targetRow = 0;
-        int maxTemplateRow = rowGroups.Count > 0 ? rowGroups.Max(g => g.Key) : -1;
+        int maxTemplateRow = compiledPage.MaxRow;
 
         for (int r = 0; r <= maxTemplateRow; r++)
         {
-            var cellsInRow = rowGroups.FirstOrDefault(g => g.Key == r)?.ToList();
-            if (cellsInRow is null || cellsInRow.Count == 0)
+            if (!compiledPage.Rows.TryGetValue(r, out var cellsInRow) || cellsInRow.Count == 0)
             {
                 if (rowLookup.TryGetValue(r, out var rDef))
                 {
@@ -288,9 +355,9 @@ public sealed partial class ExcelTemplateParser
                 foreach (var item in items)
                 {
                     newPage.Rows.Add(new Row(targetRow, rowHeight));
-                    foreach (var cell in cellsInRow)
+                    foreach (var compiledCell in cellsInRow)
                     {
-                        var boundCell = BindCellWithItemContext(cell, targetRow, item, collectionName, data);
+                        var boundCell = BindCellWithItemContext(compiledCell, targetRow, item, collectionName, data);
                         newPage.SetCell(boundCell);
                     }
                     targetRow++;
@@ -302,9 +369,9 @@ public sealed partial class ExcelTemplateParser
                 float rowHeight = rowLookup.TryGetValue(r, out var rDef) ? rDef.Height : templatePage.Settings.DefaultRowHeight;
                 newPage.Rows.Add(new Row(targetRow, rowHeight));
 
-                foreach (var cell in cellsInRow)
+                foreach (var compiledCell in cellsInRow)
                 {
-                    var boundCell = BindCellGeneral(cell, targetRow, data);
+                    var boundCell = BindCellGeneral(compiledCell, targetRow, data);
                     newPage.SetCell(boundCell);
                 }
                 targetRow++;
@@ -315,82 +382,104 @@ public sealed partial class ExcelTemplateParser
     }
 
     private (string CollectionName, IEnumerable<object> Items)? FindCollectionReference(
-        List<Cell> cells, object rootData)
+        IReadOnlyList<CompiledCell> cells, object rootData)
     {
-        foreach (var cell in cells)
+        foreach (var compiledCell in cells)
         {
-            if (cell.Value is not string str) continue;
-
-            var match = PlaceholderRegex.Match(str);
-            while (match.Success)
+            foreach (var part in compiledCell.Parts)
             {
-                string path = match.Groups[1].Value.Trim();
-                int dotIdx = path.IndexOf('.');
-                if (dotIdx > 0)
+                if (part.Binding is null || part.CollectionRootBinding is null)
                 {
-                    string candidateCol = path[..dotIdx];
-                    var val = _valueResolver.Resolve(rootData, candidateCol);
-                    if (val is IEnumerable enumerable and not string &&
-                        val is not IDictionary<string, object?> and not IDictionary)
-                    {
-                        var list = enumerable.Cast<object>().ToList();
-                        return (candidateCol, list);
-                    }
+                    continue;
                 }
-                match = match.NextMatch();
+
+                var val = ResolveBinding(rootData, part.CollectionRootBinding);
+                if (val is IEnumerable enumerable and not string &&
+                    val is not IDictionary<string, object?> and not IDictionary)
+                {
+                    var list = enumerable.Cast<object>().ToList();
+                    return (part.CollectionRootBinding.Path, list);
+                }
             }
         }
         return null;
     }
 
     private Cell BindCellWithItemContext(
-        Cell cell, int targetRow, object item, string collectionName, object rootData)
+        CompiledCell compiledCell, int targetRow, object item, string collectionName, object rootData)
     {
+        var cell = compiledCell.Cell;
         object? val = cell.Value;
-        if (cell.Value is string str)
+        if (cell.Value is string && compiledCell.HasPlaceholders)
         {
-            val = PlaceholderRegex.Replace(str, m =>
+            var builder = new System.Text.StringBuilder();
+            foreach (var part in compiledCell.Parts)
             {
-                string path = m.Groups[1].Value.Trim();
-                if (path.StartsWith(collectionName + ".", StringComparison.OrdinalIgnoreCase))
+                if (part.Literal is not null)
                 {
-                    string subPath = path[(collectionName.Length + 1)..];
-                    var subVal = _valueResolver.Resolve(item, subPath);
-                    return subVal?.ToString() ?? "";
+                    builder.Append(part.Literal);
+                    continue;
                 }
-                // 否则尝试从根对象取
-                var rootVal = _valueResolver.Resolve(rootData, path);
-                return rootVal?.ToString() ?? "";
-            });
+
+                if (part.Binding is null)
+                {
+                    continue;
+                }
+
+                var useItemBinding = part.Binding.Segments.Length > 1 &&
+                    string.Equals(
+                        part.CollectionRootBinding?.Path,
+                        collectionName,
+                        StringComparison.OrdinalIgnoreCase);
+                var binding = useItemBinding ? part.ItemBinding! : part.Binding;
+                var value = ResolveBinding(useItemBinding ? item : rootData, binding);
+                builder.Append(value?.ToString() ?? string.Empty);
+            }
+
+            val = builder.ToString();
         }
 
         return new Cell(targetRow, cell.Column, val, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
     }
 
-    private Cell BindCellGeneral(Cell cell, int targetRow, object rootData)
+    private Cell BindCellGeneral(CompiledCell compiledCell, int targetRow, object rootData)
     {
+        var cell = compiledCell.Cell;
         object? val = cell.Value;
-        if (cell.Value is string str && str.Contains("{{"))
+        if (cell.Value is string && compiledCell.HasPlaceholders)
         {
             // 如果整个单元格仅为一个占位符如 "{{Total}}"，保留其原始数据类型（如数字、日期等）
-            var singleMatch = PlaceholderRegex.Match(str.Trim());
-            if (singleMatch.Success && singleMatch.Value == str.Trim())
+            if (compiledCell.SingleBinding is not null)
             {
-                string path = singleMatch.Groups[1].Value.Trim();
-                val = _valueResolver.Resolve(rootData, path);
+                val = ResolveBinding(rootData, compiledCell.SingleBinding);
             }
             else
             {
-                val = PlaceholderRegex.Replace(str, m =>
+                var builder = new System.Text.StringBuilder();
+                foreach (var part in compiledCell.Parts)
                 {
-                    string path = m.Groups[1].Value.Trim();
-                    var v = _valueResolver.Resolve(rootData, path);
-                    return v?.ToString() ?? "";
-                });
+                    if (part.Literal is not null)
+                    {
+                        builder.Append(part.Literal);
+                    }
+                    else if (part.Binding is not null)
+                    {
+                        builder.Append(ResolveBinding(rootData, part.Binding)?.ToString() ?? string.Empty);
+                    }
+                }
+
+                val = builder.ToString();
             }
         }
 
         return new Cell(targetRow, cell.Column, val, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
+    }
+
+    private object? ResolveBinding(object? data, TemplateBinding binding)
+    {
+        return _valueResolver is ICompiledTemplateValueResolver compiledResolver
+            ? compiledResolver.Resolve(data, binding)
+            : _valueResolver.Resolve(data, binding.Path);
     }
 
     private static (object? Value, CellType Type) ExtractCellValue(IXLCell xlCell)

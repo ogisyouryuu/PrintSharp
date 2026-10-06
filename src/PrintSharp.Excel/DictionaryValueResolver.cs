@@ -5,7 +5,7 @@ namespace PrintSharp.Excel;
 /// <summary>
 /// Resolves dotted paths in generic and non-generic dictionaries without reflection.
 /// </summary>
-public sealed class DictionaryValueResolver : ITemplateValueResolver
+public sealed class DictionaryValueResolver : ITemplateValueResolver, ICompiledTemplateValueResolver
 {
     /// <inheritdoc />
     public object? Resolve(object? data, string path)
@@ -15,33 +15,44 @@ public sealed class DictionaryValueResolver : ITemplateValueResolver
             return null;
         }
 
+        return Resolve(data, path.Split('.'));
+    }
+
+    object? ICompiledTemplateValueResolver.Resolve(object? data, TemplateBinding binding)
+    {
+        return Resolve(data, binding.Segments);
+    }
+
+    private static object? Resolve(object? data, IReadOnlyList<string> segments)
+    {
         object? current = data;
-        foreach (var part in path.Split('.'))
+        foreach (var part in segments)
         {
-            if (current is IDictionary<string, object?> genericDictionary)
-            {
-                genericDictionary.TryGetValue(part, out current);
-                continue;
-            }
-
-            if (current is IDictionary dictionary)
-            {
-                current = dictionary.Contains(part) ? dictionary[part] : null;
-                continue;
-            }
-
-            return null;
+            current = ResolveSegment(current, part);
         }
 
         return current;
     }
+
+    internal static object? ResolveSegment(object? data, string segment)
+    {
+        if (data is IDictionary<string, object?> genericDictionary)
+        {
+            genericDictionary.TryGetValue(segment, out var value);
+            return value;
+        }
+
+        if (data is IDictionary dictionary)
+        {
+            return dictionary.Contains(segment) ? dictionary[segment] : null;
+        }
+
+        return null;
+    }
 }
 
-internal sealed class DefaultTemplateValueResolver : ITemplateValueResolver
+internal sealed class DefaultTemplateValueResolver : ITemplateValueResolver, ICompiledTemplateValueResolver
 {
-    private readonly DictionaryValueResolver _dictionaryResolver = new();
-    private readonly ReflectionValueResolver _reflectionResolver = new();
-
     public object? Resolve(object? data, string path)
     {
         if (data is null || string.IsNullOrWhiteSpace(path))
@@ -49,8 +60,18 @@ internal sealed class DefaultTemplateValueResolver : ITemplateValueResolver
             return null;
         }
 
+        return Resolve(data, path.Split('.'));
+    }
+
+    object? ICompiledTemplateValueResolver.Resolve(object? data, TemplateBinding binding)
+    {
+        return Resolve(data, binding.Segments);
+    }
+
+    private object? Resolve(object? data, IReadOnlyList<string> segments)
+    {
         object? current = data;
-        foreach (var part in path.Split('.'))
+        foreach (var part in segments)
         {
             if (current is null)
             {
@@ -58,8 +79,8 @@ internal sealed class DefaultTemplateValueResolver : ITemplateValueResolver
             }
 
             current = current is IDictionary<string, object?> or IDictionary
-                ? _dictionaryResolver.Resolve(current, part)
-                : _reflectionResolver.Resolve(current, part);
+                ? DictionaryValueResolver.ResolveSegment(current, part)
+                : ReflectionValueResolver.ResolveSegment(current, part);
         }
 
         return current;
