@@ -5,10 +5,10 @@
 **Grid-first document generation for .NET**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![NuGet: PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg)](https://www.nuget.org/packages/PrintSharp/)
-[![NuGet: PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg)](https://www.nuget.org/packages/PrintSharp.Excel/)
-[![NuGet: PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg)](https://www.nuget.org/packages/PrintSharp.Pdf/)
-[![NuGet: PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg)](https://www.nuget.org/packages/PrintSharp.Windows/)
+[![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
+[![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
+[![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
+[![PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg?label=PrintSharp.Windows)](https://www.nuget.org/packages/PrintSharp.Windows/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ogisyouryuu/PrintSharp/blob/main/LICENSE)
 
 [English](https://github.com/ogisyouryuu/PrintSharp/blob/main/README.md) · [简体中文](https://github.com/ogisyouryuu/PrintSharp/blob/main/README.zh-CN.md) · [日本語](https://github.com/ogisyouryuu/PrintSharp/blob/main/README.ja.md)
