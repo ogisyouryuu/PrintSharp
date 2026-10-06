@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Data;
 using System.Reflection;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
@@ -24,12 +25,14 @@ public class TemplateResolverBenchmarks
     private readonly DictionaryValueResolver _dictionaryResolver = new();
     private readonly BenchmarkInvoiceDataTemplateValueResolver _generatedResolver = new();
     private readonly CachedReflectionResolver _cachedReflectionResolver = new();
+    private readonly DataSetTemplateValueResolver _dataSetResolver = new();
 
     private readonly BenchmarkInvoiceData _pocoData = new();
     private readonly Dictionary<string, object?> _dictionaryData = new()
     {
         ["Customer"] = new Dictionary<string, object?> { ["Name"] = "Taro" }
     };
+    private readonly DataSet _dataSet = CreateDataSet();
 
     [Params(10_000, 100_000, 1_000_000)]
     public int BindingCount { get; set; }
@@ -46,15 +49,31 @@ public class TemplateResolverBenchmarks
     [Benchmark]
     public int Generated() => ResolveRepeatedly(_generatedResolver, _pocoData);
 
-    private int ResolveRepeatedly(ITemplateValueResolver resolver, object data)
+    [Benchmark]
+    public int DataSet() => ResolveRepeatedly(_dataSetResolver, _dataSet, "Items.Name");
+
+    [Benchmark]
+    public int DataTable() => ResolveRepeatedly(_dataSetResolver, _dataSet.Tables["Items"]!, "Name");
+
+    private int ResolveRepeatedly(ITemplateValueResolver resolver, object data, string path = "Customer.Name")
     {
         var result = 0;
         for (var index = 0; index < BindingCount; index++)
         {
-            result += resolver.Resolve(data, "Customer.Name")?.ToString()?.Length ?? 0;
+            result += resolver.Resolve(data, path)?.ToString()?.Length ?? 0;
         }
 
         return result;
+    }
+
+    private static DataSet CreateDataSet()
+    {
+        var dataSet = new DataSet();
+        var table = new DataTable("Items");
+        table.Columns.Add("Name", typeof(string));
+        table.Rows.Add("Taro");
+        dataSet.Tables.Add(table);
+        return dataSet;
     }
 
     private sealed class CachedReflectionResolver : ITemplateValueResolver

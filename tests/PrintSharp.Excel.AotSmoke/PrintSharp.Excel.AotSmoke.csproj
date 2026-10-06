@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\src\PrintSharp.Excel\PrintSharp.Excel.csproj" />
     <ProjectReference Include="..\..\src\PrintSharp.Excel.SourceGenerator\PrintSharp.Excel.SourceGenerator.csproj"
       OutputItemType="Analyzer"
+      GlobalPropertiesToRemove="PublishAot;RuntimeIdentifier"
       ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

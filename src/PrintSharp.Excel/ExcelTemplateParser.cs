@@ -3,7 +3,6 @@ using PrintSharp.Cells;
 using PrintSharp.Documents;
 using PrintSharp.Grid;
 using PrintSharp.Styles;
-using System.Collections;
 using System.Text.RegularExpressions;
 
 namespace PrintSharp.Excel;
@@ -31,7 +30,7 @@ public sealed partial class ExcelTemplateParser
     /// <param name="valueResolver">テンプレート データのアクセスに使用する Resolver。<see langword="null"/> の場合は既定の POCO / Dictionary Resolver を使用します。</param>
     public ExcelTemplateParser(ITemplateValueResolver? valueResolver = null)
     {
-        _valueResolver = valueResolver ?? new DefaultTemplateValueResolver();
+        _valueResolver = new CompositeTemplateValueResolver(valueResolver ?? new DefaultTemplateValueResolver());
     }
 
     /// <summary>
@@ -279,7 +278,7 @@ public sealed partial class ExcelTemplateParser
     {
         if (cell.Value is not string text || !text.Contains("{{", StringComparison.Ordinal))
         {
-            return new CompiledCell(cell, null, Array.Empty<CompiledTemplatePart>());
+            return new CompiledCell(cell, null, null, null, Array.Empty<CompiledTemplatePart>());
         }
 
         var trimmedText = text.Trim();
@@ -288,6 +287,14 @@ public sealed partial class ExcelTemplateParser
         if (singleMatch.Success && singleMatch.Value == trimmedText)
         {
             singleBinding = registry.GetOrAdd(singleMatch.Groups[1].Value.Trim());
+        }
+
+        TemplateBinding? singleCollectionRootBinding = null;
+        TemplateBinding? singleItemBinding = null;
+        if (singleBinding is { Segments.Length: > 1 })
+        {
+            singleCollectionRootBinding = registry.GetOrAdd(singleBinding.Segments[0]);
+            singleItemBinding = registry.GetOrAdd(string.Join('.', singleBinding.Segments.Skip(1)));
         }
 
         var parts = new List<CompiledTemplatePart>();
@@ -320,7 +327,7 @@ public sealed partial class ExcelTemplateParser
             parts.Add(new CompiledTemplatePart(text[currentIndex..], null, null, null));
         }
 
-        return new CompiledCell(cell, singleBinding, parts);
+        return new CompiledCell(cell, singleBinding, singleCollectionRootBinding, singleItemBinding, parts);
     }
 
     private Page RenderPageData(CompiledPage compiledPage, object data)
@@ -403,12 +410,9 @@ public sealed partial class ExcelTemplateParser
                     continue;
                 }
 
-                var val = ResolveBinding(rootData, part.CollectionRootBinding);
-                if (val is IEnumerable enumerable and not string &&
-                    val is not IDictionary<string, object?> and not IDictionary)
+                if (TryResolveCollection(rootData, part.CollectionRootBinding, out var items))
                 {
-                    var list = enumerable.Cast<object>().ToList();
-                    return (part.CollectionRootBinding.Path, list);
+                    return (part.CollectionRootBinding.Path, items);
                 }
             }
         }
@@ -422,31 +426,39 @@ public sealed partial class ExcelTemplateParser
         object? val = cell.Value;
         if (cell.Value is string && compiledCell.HasPlaceholders)
         {
-            var builder = new System.Text.StringBuilder();
-            foreach (var part in compiledCell.Parts)
+            if (compiledCell.SingleBinding is not null)
             {
-                if (part.Literal is not null)
-                {
-                    builder.Append(part.Literal);
-                    continue;
-                }
-
-                if (part.Binding is null)
-                {
-                    continue;
-                }
-
-                var useItemBinding = part.Binding.Segments.Length > 1 &&
-                    string.Equals(
-                        part.CollectionRootBinding?.Path,
-                        collectionName,
-                        StringComparison.OrdinalIgnoreCase);
-                var binding = useItemBinding ? part.ItemBinding! : part.Binding;
-                var value = ResolveBinding(useItemBinding ? item : rootData, binding);
-                builder.Append(value?.ToString() ?? string.Empty);
+                var binding = compiledCell.SingleBinding;
+                var useItemBinding = binding.Segments.Length > 1 &&
+                    string.Equals(compiledCell.SingleCollectionRootBinding?.Path, collectionName, StringComparison.Ordinal);
+                val = ResolveBinding(useItemBinding ? item : rootData,
+                    useItemBinding ? compiledCell.SingleItemBinding! : binding);
             }
+            else
+            {
+                var builder = new System.Text.StringBuilder();
+                foreach (var part in compiledCell.Parts)
+                {
+                    if (part.Literal is not null)
+                    {
+                        builder.Append(part.Literal);
+                        continue;
+                    }
 
-            val = builder.ToString();
+                    if (part.Binding is null)
+                    {
+                        continue;
+                    }
+
+                    var useItemBinding = part.Binding.Segments.Length > 1 &&
+                        string.Equals(part.CollectionRootBinding?.Path, collectionName, StringComparison.Ordinal);
+                    var binding = useItemBinding ? part.ItemBinding! : part.Binding;
+                    var value = ResolveBinding(useItemBinding ? item : rootData, binding);
+                    builder.Append(value?.ToString() ?? string.Empty);
+                }
+
+                val = builder.ToString();
+            }
         }
 
         return new Cell(targetRow, cell.Column, val, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
@@ -487,9 +499,12 @@ public sealed partial class ExcelTemplateParser
 
     private object? ResolveBinding(object? data, TemplateBinding binding)
     {
-        return _valueResolver is ICompiledTemplateValueResolver compiledResolver
-            ? compiledResolver.Resolve(data, binding)
-            : _valueResolver.Resolve(data, binding.Path);
+        return ((ICompiledTemplateValueResolver)_valueResolver).Resolve(data, binding);
+    }
+
+    private bool TryResolveCollection(object? data, TemplateBinding binding, out IEnumerable<object> items)
+    {
+        return ((ICompiledTemplateValueResolver)_valueResolver).TryResolveCollection(data, binding, out items);
     }
 
     private static (object? Value, CellType Type) ExtractCellValue(IXLCell xlCell)

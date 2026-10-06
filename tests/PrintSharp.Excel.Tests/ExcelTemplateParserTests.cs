@@ -1,7 +1,10 @@
 using System.Collections;
+using System.Data;
 using ClosedXML.Excel;
 using PrintSharp.Documents;
 using PrintSharp.Excel;
+using PrintSharp.Pdf;
+using PdfSharp.Fonts;
 using PrintSharp.Styles;
 using Xunit;
 
@@ -168,7 +171,7 @@ public class ExcelTemplateParserTests
         Assert.Equal("Taro", document.DefaultPage.FindCell(0, 0)?.Value);
         Assert.Equal("住所：Tokyo", document.DefaultPage.FindCell(0, 1)?.Value);
         Assert.Equal("Item A", document.DefaultPage.FindCell(1, 0)?.Value);
-        Assert.Equal("12.5", document.DefaultPage.FindCell(1, 1)?.Value);
+        Assert.Equal(12.5m, document.DefaultPage.FindCell(1, 1)?.Value);
         Assert.Equal("Item B", document.DefaultPage.FindCell(2, 0)?.Value);
     }
 
@@ -218,6 +221,152 @@ public class ExcelTemplateParserTests
 
         Assert.Equal("First", first.DefaultPage.FindCell(0, 0)?.Value);
         Assert.Equal("Second", second.DefaultPage.FindCell(0, 0)?.Value);
+    }
+
+    [Fact]
+    public void DataSetResolver_ShouldResolveTablesRowsAndPreserveClrTypes()
+    {
+        var dataSet = CreateDataSet();
+        var resolver = new DataSetTemplateValueResolver();
+
+        Assert.Equal("Taro", resolver.Resolve(dataSet, "Customer.Name"));
+        Assert.Equal("Tokyo", resolver.Resolve(dataSet.Tables["Customer"]!.Rows[0], "Address"));
+        Assert.Equal(100m, resolver.Resolve(dataSet, "Items.Price"));
+        Assert.IsType<decimal>(resolver.Resolve(dataSet, "Items.Price"));
+        Assert.IsType<int>(resolver.Resolve(dataSet, "Items.Quantity"));
+        Assert.IsType<DateTime>(resolver.Resolve(dataSet, "Items.CreatedAt"));
+        Assert.Null(resolver.Resolve(dataSet.Tables["Customer"]!.Rows[0], "Optional"));
+        Assert.Null(resolver.Resolve(dataSet, "Missing.Name"));
+        Assert.Null(resolver.Resolve(dataSet, "Items.Missing"));
+        Assert.Null(resolver.Resolve(dataSet, "items.Price"));
+    }
+
+    [Fact]
+    public void DataTableAndDataRow_ShouldResolveDirectly()
+    {
+        var table = CreateDataSet().Tables["Customer"]!;
+        var resolver = new DataSetTemplateValueResolver();
+
+        Assert.Equal("Taro", resolver.Resolve(table, "Name"));
+        Assert.Equal("Taro", resolver.Resolve(table.Rows[0], "Name"));
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Sheet1");
+        worksheet.Cell("A1").Value = "{{Name}}";
+        worksheet.Cell("A2").Value = "{{Items.Name}}";
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+        var tableDocument = new ExcelTemplateParser().Render(template, CreateDataSet().Tables["Items"]!);
+        Assert.Equal("Apple", tableDocument.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("Apple", tableDocument.DefaultPage.FindCell(1, 0)?.Value);
+        Assert.Equal("Orange", tableDocument.DefaultPage.FindCell(2, 0)?.Value);
+
+        template.Position = 0;
+        var rowDocument = new ExcelTemplateParser().Render(template, table.Rows[0]);
+        Assert.Equal("Taro", rowDocument.DefaultPage.FindCell(0, 0)?.Value);
+    }
+
+    [Fact]
+    public void Render_DataSet_ShouldExpandTableRowsAndSupportMixedSources()
+    {
+        var dataSet = CreateDataSet();
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.Worksheets.Add("Sheet1");
+        sheet.Cell("A1").Value = "{{Customer.Name}}";
+        sheet.Cell("A2").Value = "{{Items.Name}}";
+        sheet.Cell("B2").Value = "{{Items.Price}}";
+        sheet.Cell("C2").Value = "{{Items.Quantity}}";
+        sheet.Cell("D2").Value = "{{Items.CreatedAt}}";
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var document = new ExcelTemplateParser().Render(template, dataSet);
+
+        Assert.Equal("Taro", document.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("Apple", document.DefaultPage.FindCell(1, 0)?.Value);
+        Assert.Equal(100m, document.DefaultPage.FindCell(1, 1)?.Value);
+        Assert.Equal(2, document.DefaultPage.FindCell(1, 2)?.Value);
+        Assert.Equal(new DateTime(2026, 1, 1), document.DefaultPage.FindCell(1, 3)?.Value);
+        Assert.Equal("Orange", document.DefaultPage.FindCell(2, 0)?.Value);
+        Assert.Equal(200m, document.DefaultPage.FindCell(2, 1)?.Value);
+        Assert.Equal(3, document.DefaultPage.FindCell(2, 2)?.Value);
+        Assert.Equal(new DateTime(2026, 1, 2), document.DefaultPage.FindCell(2, 3)?.Value);
+
+        var mixed = new Dictionary<string, object?>
+        {
+            ["Customer"] = dataSet.Tables["Customer"]!.Rows[0],
+            ["Items"] = dataSet.Tables["Items"]!
+        };
+        template.Position = 0;
+        var mixedDocument = new ExcelTemplateParser().Render(template, mixed);
+        Assert.Equal("Taro", mixedDocument.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("Apple", mixedDocument.DefaultPage.FindCell(1, 0)?.Value);
+        Assert.Equal(200m, mixedDocument.DefaultPage.FindCell(2, 1)?.Value);
+    }
+
+    [Fact]
+    public void Render_DataSetDocument_ShouldExportToExcelAndPdf()
+    {
+        var dataSet = CreateDataSet();
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.Worksheets.Add("Sheet1");
+        sheet.Style.Font.FontName = "Arial";
+        sheet.Cell("A1").Value = "{{Items.Name}}";
+        sheet.Cell("B1").Value = "{{Items.Price}}";
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var document = new ExcelTemplateParser().Render(template, dataSet);
+        using var excel = new MemoryStream();
+        document.SaveAsExcel(excel);
+        excel.Position = 0;
+        using var renderedWorkbook = new XLWorkbook(excel);
+        Assert.Equal("Orange", renderedWorkbook.Worksheet(1).Cell("A2").GetString());
+        Assert.Equal(200d, renderedWorkbook.Worksheet(1).Cell("B2").GetDouble());
+
+        byte[] pdf;
+        if (OperatingSystem.IsWindows())
+        {
+            GlobalFontSettings.UseWindowsFontsUnderWindows = true;
+            pdf = document.ToPdfBytes();
+        }
+        else
+        {
+            using var pdfTemplateWorkbook = new XLWorkbook();
+            pdfTemplateWorkbook.Worksheets.Add("Sheet1").Cell("A1").Value = "{{Customer.Optional}}";
+            using var pdfTemplate = new MemoryStream();
+            pdfTemplateWorkbook.SaveAs(pdfTemplate);
+            pdfTemplate.Position = 0;
+            var pdfDocument = new ExcelTemplateParser().Render(pdfTemplate, dataSet);
+            Assert.Null(pdfDocument.DefaultPage.FindCell(0, 0)?.Value);
+            pdf = pdfDocument.ToPdfBytes();
+        }
+        Assert.True(pdf.Length > 4);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
+    }
+
+    private static DataSet CreateDataSet()
+    {
+        var dataSet = new DataSet("Store");
+        var customer = new DataTable("Customer");
+        customer.Columns.Add("Name", typeof(string));
+        customer.Columns.Add("Address", typeof(string));
+        customer.Columns.Add("Optional", typeof(string));
+        customer.Rows.Add("Taro", "Tokyo", DBNull.Value);
+        dataSet.Tables.Add(customer);
+
+        var items = new DataTable("Items");
+        items.Columns.Add("Name", typeof(string));
+        items.Columns.Add("Price", typeof(decimal));
+        items.Columns.Add("Quantity", typeof(int));
+        items.Columns.Add("CreatedAt", typeof(DateTime));
+        items.Rows.Add("Apple", 100m, 2, new DateTime(2026, 1, 1));
+        items.Rows.Add("Orange", 200m, 3, new DateTime(2026, 1, 2));
+        dataSet.Tables.Add(items);
+        return dataSet;
     }
 
     [Fact]
@@ -333,17 +482,17 @@ public class ExcelTemplateParserTests
         // Verify repeating rows (row index 3, 4, 5)
         // Item 1 (row 3)
         Assert.Equal("Pixel 9 Pro", page.FindCell(3, 0)?.Value);
-        Assert.Equal("2", page.FindCell(3, 1)?.Value);
-        Assert.Equal("999", page.FindCell(3, 2)?.Value);
+        Assert.Equal(2, page.FindCell(3, 1)?.Value);
+        Assert.Equal(999m, page.FindCell(3, 2)?.Value);
 
         // Item 2 (row 4)
         Assert.Equal("Pixel Watch 3", page.FindCell(4, 0)?.Value);
-        Assert.Equal("1", page.FindCell(4, 1)?.Value);
-        Assert.Equal("349", page.FindCell(4, 2)?.Value);
+        Assert.Equal(1, page.FindCell(4, 1)?.Value);
+        Assert.Equal(349m, page.FindCell(4, 2)?.Value);
 
         // Item 3 (row 5)
         Assert.Equal("Pixel Buds Pro 2", page.FindCell(5, 0)?.Value);
-        Assert.Equal("3", page.FindCell(5, 1)?.Value);
-        Assert.Equal("229", page.FindCell(5, 2)?.Value);
+        Assert.Equal(3, page.FindCell(5, 1)?.Value);
+        Assert.Equal(229m, page.FindCell(5, 2)?.Value);
     }
 }

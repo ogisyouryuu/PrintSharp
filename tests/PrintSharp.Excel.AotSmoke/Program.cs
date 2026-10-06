@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using System.Data;
 using PrintSharp.Excel;
 
 using var workbook = new XLWorkbook();
@@ -22,7 +23,24 @@ if (!Equals(document.DefaultPage.FindCell(0, 0)?.Value, "AOT Customer") ||
     return 1;
 }
 
-Console.WriteLine("Generated Excel template bindings passed Native AOT smoke validation.");
+var dataSet = new DataSet();
+var customers = new DataTable("Customer");
+customers.Columns.Add("Name", typeof(string));
+customers.Rows.Add("AOT DataSet Customer");
+dataSet.Tables.Add(customers);
+var items = new DataTable("Items");
+items.Columns.Add("Name", typeof(string));
+items.Rows.Add("AOT DataSet Item");
+dataSet.Tables.Add(items);
+templateStream.Position = 0;
+var dataSetDocument = ExcelTemplate<DataSet>.Load(templateStream).Render(dataSet);
+if (!Equals(dataSetDocument.DefaultPage.FindCell(0, 0)?.Value, "AOT DataSet Customer") ||
+    !Equals(dataSetDocument.DefaultPage.FindCell(1, 0)?.Value, "AOT DataSet Item"))
+{
+    return 2;
+}
+
+Console.WriteLine("Generated and DataSet template bindings passed Native AOT smoke validation.");
 return 0;
 
 [GenerateTemplateBindings]
