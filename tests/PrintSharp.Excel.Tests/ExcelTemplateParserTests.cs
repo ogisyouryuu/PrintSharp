@@ -423,6 +423,44 @@ public class ExcelTemplateParserTests
     }
 
     [Fact]
+    public void Render_ShouldPreserveSolidRgbAndThemeCellBackgrounds()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Colors");
+        worksheet.Cell("A1").Value = "{{Title}}";
+        worksheet.Cell("A1").Style.Fill.BackgroundColor = XLColor.FromHtml("#AABBCC");
+        worksheet.Cell("B1").Value = "Theme";
+        worksheet.Cell("B1").Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.25);
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var document = new ExcelTemplateParser().Render(template, new Dictionary<string, object?>
+        {
+            ["Title"] = "Report"
+        });
+
+        Assert.Equal(ColorSpec.FromHex("#AABBCC"), document.DefaultPage.FindCell(0, 0)?.Style?.BackColor);
+        var themeBase = workbook.Theme.ResolveThemeColor(XLThemeColor.Accent1).Color;
+        var expectedThemeColor = System.Drawing.Color.FromArgb(
+            themeBase.A,
+            TintComponent(themeBase.R, 0.25),
+            TintComponent(themeBase.G, 0.25),
+            TintComponent(themeBase.B, 0.25));
+        Assert.Equal(ColorSpec.FromRgba(expectedThemeColor.R, expectedThemeColor.G, expectedThemeColor.B, expectedThemeColor.A),
+            document.DefaultPage.FindCell(0, 1)?.Style?.BackColor);
+
+        using var exported = new MemoryStream(document.ToExcelBytes());
+        using var renderedWorkbook = new XLWorkbook(exported);
+        var exportedColor = renderedWorkbook.Worksheet(1).Cell("A1").Style.Fill.BackgroundColor.Color;
+        Assert.Equal(ColorSpec.FromHex("#AABBCC"),
+            ColorSpec.FromRgba(exportedColor.R, exportedColor.G, exportedColor.B, exportedColor.A));
+    }
+
+    private static int TintComponent(byte value, double tint) =>
+        (int)Math.Round(value * (1 - tint) + 255 * tint, MidpointRounding.AwayFromZero);
+
+    [Fact]
     public void Render_TemplateDataBinding_ShouldSubstitutePlaceholdersAndRepeatingRows()
     {
         // 1. Create a template workbook in memory

@@ -269,11 +269,12 @@ public sealed class ClosedXmlRenderer
             xlRange.Style.Font.FontColor = XLColor.FromArgb(fc.A, fc.R, fc.G, fc.B);
         }
 
-        // 3. 背景色
+        // 背景色を単色塗りつぶしとして設定する
         if (style.BackColor.HasValue && style.BackColor.Value.A > 0)
         {
             var bc = style.BackColor.Value;
-            xlRange.Style.Fill.SetBackgroundColor(XLColor.FromArgb(bc.A, bc.R, bc.G, bc.B));
+            xlRange.Style.Fill.PatternType = XLFillPatternValues.Solid;
+            xlRange.Style.Fill.BackgroundColor = XLColor.FromArgb(bc.A, bc.R, bc.G, bc.B);
         }
 
         // 4. 对齐

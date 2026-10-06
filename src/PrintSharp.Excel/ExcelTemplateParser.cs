@@ -193,7 +193,7 @@ public sealed partial class ExcelTemplateParser
                 }
 
                 var (value, cellType) = ExtractCellValue(xlCell);
-                var style = ExtractCellStyle(xlCell);
+                var style = ExtractCellStyle(xlCell, ws.Workbook.Theme);
 
                 var cell = new Cell(rIdx, cIdx, value, rowSpan, colSpan, cellType, style);
                 page.SetCell(cell);
@@ -529,7 +529,7 @@ public sealed partial class ExcelTemplateParser
         };
     }
 
-    private static CellStyle ExtractCellStyle(IXLCell xlCell)
+    private static CellStyle ExtractCellStyle(IXLCell xlCell, IXLTheme theme)
     {
         var xlStyle = xlCell.Style;
 
@@ -552,14 +552,13 @@ public sealed partial class ExcelTemplateParser
 
         // 背景色
         ColorSpec? backColor = null;
-        if (xlStyle.Fill.PatternType != XLFillPatternValues.None &&
-            xlStyle.Fill.BackgroundColor.ColorType == XLColorType.Color)
+        if (xlStyle.Fill.PatternType != XLFillPatternValues.None)
         {
-            var c = xlStyle.Fill.BackgroundColor.Color;
-            if (c.A > 0)
-            {
-                backColor = ColorSpec.FromRgba(c.R, c.G, c.B, c.A);
-            }
+            var foreground = ConvertColor(xlStyle.Fill.PatternColor, theme);
+            var background = ConvertColor(xlStyle.Fill.BackgroundColor, theme);
+            backColor = xlStyle.Fill.PatternType == XLFillPatternValues.Solid
+                ? foreground ?? background
+                : background ?? foreground;
         }
 
         // 对齐
@@ -598,6 +597,58 @@ public sealed partial class ExcelTemplateParser
             Format = string.IsNullOrEmpty(xlStyle.NumberFormat.Format) ? null : xlStyle.NumberFormat.Format,
             Border = border
         };
+    }
+
+    private static ColorSpec? ConvertColor(XLColor color, IXLTheme theme)
+    {
+        if (!color.HasValue)
+        {
+            return null;
+        }
+
+        System.Drawing.Color value;
+        switch (color.ColorType)
+        {
+            case XLColorType.Color:
+                value = color.Color;
+                break;
+            case XLColorType.Theme:
+                value = ApplyTint(theme.ResolveThemeColor(color.ThemeColor).Color, color.ThemeTint);
+                break;
+            case XLColorType.Indexed:
+                if (!XLColor.IndexedColors.TryGetValue(color.Indexed, out var indexedColor))
+                {
+                    return null;
+                }
+                value = indexedColor.Color;
+                break;
+            default:
+                return null;
+        }
+
+        return value.A > 0
+            ? ColorSpec.FromRgba(value.R, value.G, value.B, value.A)
+            : null;
+    }
+
+    private static System.Drawing.Color ApplyTint(System.Drawing.Color color, double tint)
+    {
+        if (tint == 0)
+        {
+            return color;
+        }
+
+        static int Adjust(byte component, double amount) =>
+            (int)Math.Round(amount < 0
+                ? component * (1 + amount)
+                : component * (1 - amount) + 255 * amount,
+                MidpointRounding.AwayFromZero);
+
+        return System.Drawing.Color.FromArgb(
+            color.A,
+            Adjust(color.R, tint),
+            Adjust(color.G, tint),
+            Adjust(color.B, tint));
     }
 
     private static BorderLine? ConvertBorder(XLBorderStyleValues style, XLColor color)

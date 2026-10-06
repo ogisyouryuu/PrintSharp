@@ -1,3 +1,4 @@
+using System.Data;
 using PrintSharp.Documents;
 using PrintSharp.Excel;
 using PrintSharp.Fluent;
@@ -5,14 +6,19 @@ using PrintSharp.Styles;
 
 namespace PrintSharp.WinForms.Demo;
 
-public enum ReportKind { Code, GridTemplate, HotelReceipt, HotelInvoice }
+public enum ReportKind { Code, GridTemplate, HotelReceipt, HotelInvoice, DataSet }
 
 public static class ReportService
 {
     public static Document Build(ReportKind kind, IReadOnlyList<StayRecord> records)
     {
         if (records.Count == 0) throw new InvalidOperationException("请先输入至少一行数据。");
-        return kind == ReportKind.Code ? BuildCode(records) : BuildTemplate(kind, records);
+        return kind switch
+        {
+            ReportKind.Code => BuildCode(records),
+            ReportKind.DataSet => BuildDataSetTemplate(records),
+            _ => BuildTemplate(kind, records)
+        };
     }
 
     private static Document BuildCode(IReadOnlyList<StayRecord> records)
@@ -98,6 +104,71 @@ public static class ReportService
             }
         }
         return result;
+    }
+
+    private static Document BuildDataSetTemplate(IReadOnlyList<StayRecord> records)
+    {
+        TemplateFactory.EnsureTemplates();
+        var chunks = records.Chunk(25).ToArray();
+        var result = new Document();
+        result.Pages.Clear();
+        result.Metadata.Title = "宿泊一覧（DataSet データバインディング）";
+        decimal grandTotal = records.Sum(record => record.Amount);
+
+        for (int index = 0; index < chunks.Length; index++)
+        {
+            var items = chunks[index];
+            var dataSet = CreateDataSet(
+                items,
+                $"{index + 1} / {chunks.Length} ページ・全 {records.Count} 件",
+                grandTotal);
+            var rendered = ExcelTemplateParser.Instance.Render(
+                Path.Combine(TemplateFactory.DirectoryPath, "DataSet.xlsx"), dataSet);
+            foreach (var page in rendered.Pages)
+            {
+                page.PageNumber = result.Pages.Count + 1;
+                page.Name = $"DataSet-{page.PageNumber}";
+                page.Settings = page.Settings with
+                {
+                    Width = 595.28f,
+                    Height = 841.89f,
+                    Margins = new PaddingSpec(24)
+                };
+                result.Pages.Add(page);
+            }
+        }
+
+        return result;
+    }
+
+    private static DataSet CreateDataSet(
+        IReadOnlyList<StayRecord> records,
+        string pageLabel,
+        decimal grandTotal)
+    {
+        var dataSet = new DataSet("StayReport");
+        var report = new DataTable("Report");
+        report.Columns.Add("PageLabel", typeof(string));
+        report.Columns.Add("PageTotal", typeof(decimal));
+        report.Columns.Add("GrandTotal", typeof(decimal));
+        report.Rows.Add(pageLabel, records.Sum(record => record.Amount), grandTotal);
+        dataSet.Tables.Add(report);
+
+        var items = new DataTable("Items");
+        items.Columns.Add("Number", typeof(int));
+        items.Columns.Add("Guest", typeof(string));
+        items.Columns.Add("Room", typeof(string));
+        items.Columns.Add("Date", typeof(DateTime));
+        items.Columns.Add("Nights", typeof(int));
+        items.Columns.Add("UnitPrice", typeof(decimal));
+        items.Columns.Add("Amount", typeof(decimal));
+        foreach (var record in records)
+        {
+            items.Rows.Add(record.Number, record.Guest, record.Room, record.Date,
+                record.Nights, record.UnitPrice, record.Amount);
+        }
+        dataSet.Tables.Add(items);
+        return dataSet;
     }
 }
 

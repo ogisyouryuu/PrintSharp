@@ -13,6 +13,46 @@ internal static class TemplateFactory
         Create(Path.Combine(directory, "Grid.xlsx"), false, false);
         Create(Path.Combine(directory, "HotelReceipt.xlsx"), true, false);
         Create(Path.Combine(directory, "HotelInvoice.xlsx"), true, true);
+        CreateDataSet(Path.Combine(directory, "DataSet.xlsx"));
+    }
+
+    private static void CreateDataSet(string path)
+    {
+        if (File.Exists(path)) return;
+        using var book = new XLWorkbook();
+        var sheet = book.AddWorksheet("DataSet");
+        sheet.Range("A1:G7").Style.Font.FontName = "Meiryo";
+        sheet.Range("A1:G7").Style.Font.FontSize = 9;
+        sheet.Range("A1:G7").Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        double[] widths = [5, 14, 6, 11, 5, 10, 12];
+        for (int column = 1; column <= widths.Length; column++)
+            sheet.Column(column).Width = widths[column - 1];
+
+        Merge(sheet, "A1:G1", "宿泊一覧（DataSet データバインディング）", 17);
+        sheet.Row(1).Height = 28;
+        Merge(sheet, "A2:G2", "{{Report.PageLabel}}", 9);
+        string[] headers = ["No.", "宿泊者", "客室", "宿泊日", "泊数", "単価", "金額"];
+        string[] fields = ["Number", "Guest", "Room", "Date", "Nights", "UnitPrice", "Amount"];
+        for (int column = 1; column <= headers.Length; column++)
+        {
+            sheet.Cell(4, column).Value = headers[column - 1];
+            sheet.Cell(5, column).Value = "{{Items." + fields[column - 1] + "}}";
+        }
+        var table = sheet.Range("A4:G5");
+        table.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+        table.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        sheet.Range("A4:G4").Style.Fill.BackgroundColor = XLColor.FromHtml("#E8EEF6");
+        sheet.Range("A4:G4").Style.Font.Bold = true;
+        sheet.Cell("D5").Style.NumberFormat.Format = "yyyy/mm/dd";
+        sheet.Range("F5:G5").Style.NumberFormat.Format = "¥#,##0";
+        sheet.Range("E5:G5").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        Merge(sheet, "A7:G7", "本页小计：{{Report.PageTotal}}    全体合计：{{Report.GrandTotal}}", 10);
+        sheet.Range("A7:G7").Style.NumberFormat.Format = "¥#,##0";
+        sheet.PageSetup.PaperSize = XLPaperSize.A4Paper;
+        sheet.PageSetup.PagesWide = 1;
+        sheet.PageSetup.PagesTall = 1;
+        sheet.PageSetup.PrintAreas.Add("A1:G7");
+        book.SaveAs(path);
     }
 
     // 既存テンプレートは上書きしないため、Excel で自由に編集できる。

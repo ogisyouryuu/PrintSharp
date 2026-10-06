@@ -1,9 +1,9 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing.Printing;
 using PrintSharp.Excel;
 using PrintSharp.Pdf;
 using PrintSharp.Windows;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Printing;
 
 namespace PrintSharp.WinForms.Demo;
 
@@ -25,7 +25,7 @@ public sealed class MainForm : Form
         MinimumSize = new Size(1000, 650);
         Font = new Font("Microsoft YaHei UI", 9);
         var tools = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(8), WrapContents = true };
-        _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）"]);
+        _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）", "5. DataSet 数据绑定"]);
         _report.SelectedIndex = 0;
         tools.Controls.Add(_report);
         AddButton(tools, "导出 Excel", () => Export(false));
@@ -62,7 +62,9 @@ public sealed class MainForm : Form
     {
         _grid.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = property, HeaderText = title, ReadOnly = readOnly,
+            DataPropertyName = property,
+            HeaderText = title,
+            ReadOnly = readOnly,
             DefaultCellStyle = new DataGridViewCellStyle { Format = format ?? "" }
         });
     }
