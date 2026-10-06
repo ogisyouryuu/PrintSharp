@@ -169,6 +169,31 @@ public class ExcelTemplateParserTests
     }
 
     [Fact]
+    public void ExcelTemplateOfT_ShouldUseRegisteredGeneratedResolverAutomatically()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Sheet1");
+        worksheet.Cell("A1").Value = "{{Customer.Name}}";
+        worksheet.Cell("A2").Value = "{{Items.Name}}";
+        using var templateStream = new MemoryStream();
+        workbook.SaveAs(templateStream);
+        templateStream.Position = 0;
+
+        var data = new GeneratedInvoiceData
+        {
+            Customer = new GeneratedCustomerData { Name = "Hanako" },
+            Items = new List<GeneratedItemData> { new() { Name = "Generated Item" } }
+        };
+        var template = ExcelTemplate<GeneratedInvoiceData>.Load(templateStream);
+
+        var document = template.Render(data);
+
+        Assert.IsType<GeneratedInvoiceDataTemplateValueResolver>(TemplateValueResolverRegistry<GeneratedInvoiceData>.Resolver);
+        Assert.Equal("Hanako", document.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("Generated Item", document.DefaultPage.FindCell(1, 0)?.Value);
+    }
+
+    [Fact]
     public void Parse_RoundTrip_ShouldReconstructGridDocument()
     {
         // 1. Build an initial document

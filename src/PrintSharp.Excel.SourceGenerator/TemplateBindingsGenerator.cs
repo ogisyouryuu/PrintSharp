@@ -117,6 +117,15 @@ internal static class ResolverEmitter
         builder.AppendLine("        return null;");
         builder.AppendLine("    }");
         builder.AppendLine("}");
+        builder.Append("internal static class ").Append(resolverName).AppendLine("Registration");
+        builder.AppendLine("{");
+        builder.AppendLine("    [global::System.Runtime.CompilerServices.ModuleInitializer]");
+        builder.AppendLine("    internal static void RegisterResolver()");
+        builder.AppendLine("    {");
+        builder.Append("        global::PrintSharp.Excel.TemplateValueResolverRegistry<")
+            .Append(FormatType(rootType)).Append(">.Register(new ").Append(resolverName).AppendLine("());");
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
         return builder.ToString();
     }
 
