@@ -139,6 +139,16 @@ document.SaveAsExcel("invoice.xlsx");
 document.SaveAsPdf("invoice.pdf");
 ```
 
+## Paper sizes and page count
+
+Select a paper size with `page.Settings = new PageSettings { PaperKind = PaperKind.A4 }`,
+or use `p.Settings(s => s.PaperKind(PaperKind.A4))` in the fluent API.
+Supported types are A5, B5, A4, B4, A3, and Customer; the B series uses ISO dimensions.
+Standard dimensions are expressed in points (72 points per inch), and landscape layout automatically swaps width and height.
+For custom dimensions, use `s.Size(300, 400)`, which selects Customer. The default Customer type preserves content-based sizing.
+`page.CurrentPageNumber` stays synchronized with `page.PageNumber`, and `document.PageCount` returns the current number of pages or worksheets.
+This count does not include additional physical pages created when a printer automatically paginates a worksheet.
+
 ## Packages
 
 | Package | Purpose | Primary dependency |

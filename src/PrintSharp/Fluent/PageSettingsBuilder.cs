@@ -11,6 +11,15 @@ public sealed class PageSettingsBuilder
     private PageOrientation _orientation = PageOrientation.Portrait;
     private float _width;
     private float _height;
+    private PaperKind _paperKind = Documents.PaperKind.Customer;
+
+    /// <summary>设置标准纸张或自定义纸张类型。</summary>
+    public PageSettingsBuilder PaperKind(PaperKind paperKind)
+    {
+        if (!Enum.IsDefined(paperKind)) throw new ArgumentOutOfRangeException(nameof(paperKind));
+        _paperKind = paperKind;
+        return this;
+    }
     private PaddingSpec _margins = new(20f);
     private float _defaultRowHeight = 20f;
     private float _defaultColumnWidth = 80f;
@@ -33,6 +42,7 @@ public sealed class PageSettingsBuilder
         ArgumentOutOfRangeException.ThrowIfNegative(height);
         _width = width;
         _height = height;
+        _paperKind = Documents.PaperKind.Customer;
         return this;
     }
 
@@ -82,6 +92,7 @@ public sealed class PageSettingsBuilder
         return new PageSettings
         {
             Orientation = _orientation,
+            PaperKind = _paperKind,
             Width = _width,
             Height = _height,
             Margins = _margins,

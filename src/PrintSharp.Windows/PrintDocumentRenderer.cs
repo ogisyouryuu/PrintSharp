@@ -34,6 +34,16 @@ public sealed class PrintDocumentRenderer
 
         int pageIndex = 0;
         printDocument.BeginPrint += (_, _) => pageIndex = 0;
+        printDocument.QueryPageSettings += (_, e) =>
+        {
+            var settings = layout.Pages[pageIndex].Page.Settings;
+            e.PageSettings.Landscape = settings.Orientation == PageOrientation.Landscape;
+            var (width, height) = settings.GetPaperSize();
+            if (width > 0 && height > 0)
+                e.PageSettings.PaperSize = new PaperSize(settings.PaperKind.ToString(),
+                    (int)Math.Round(width * options.PointsPerLogicalUnit * 100 / 72),
+                    (int)Math.Round(height * options.PointsPerLogicalUnit * 100 / 72));
+        };
         printDocument.PrintPage += (_, e) =>
         {
             var pageLayout = layout.Pages[pageIndex];

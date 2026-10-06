@@ -7,6 +7,25 @@ namespace PrintSharp.Documents;
 /// </summary>
 public sealed record PageSettings
 {
+    /// <summary>纸张类型；默认使用自定义尺寸以兼容内容自适应布局。</summary>
+    public PaperKind PaperKind { get; init; } = PaperKind.Customer;
+
+    /// <summary>获取纵向纸张尺寸（逻辑单位，标准纸张按 72 点/英寸换算）。</summary>
+    public (float Width, float Height) GetPaperSize()
+    {
+        var (width, height) = PaperKind switch
+        {
+            PaperKind.Customer => (Width, Height),
+            PaperKind.A5 => (148f * 72f / 25.4f, 210f * 72f / 25.4f),
+            PaperKind.B5 => (176f * 72f / 25.4f, 250f * 72f / 25.4f),
+            PaperKind.A4 => (210f * 72f / 25.4f, 297f * 72f / 25.4f),
+            PaperKind.B4 => (250f * 72f / 25.4f, 353f * 72f / 25.4f),
+            PaperKind.A3 => (297f * 72f / 25.4f, 420f * 72f / 25.4f),
+            _ => throw new ArgumentOutOfRangeException(nameof(PaperKind))
+        };
+        return (width, height);
+    }
+
     /// <summary>
     /// 获取或设置页面方向（纵向/横向）。
     /// </summary>

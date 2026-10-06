@@ -161,8 +161,13 @@ public sealed class GridLayoutEngine : ILayoutEngine
             calculatedCells.Add(new CalculatedCellLayout(cell, bounds, contentBounds, effectiveStyle));
         }
 
-        float totalWidth = Math.Max(settings.Width, margins.Left + contentWidth + margins.Right);
-        float totalHeight = Math.Max(settings.Height, margins.Top + contentHeight + margins.Bottom);
+        var (paperWidth, paperHeight) = settings.GetPaperSize();
+        if (settings.PaperKind != PaperKind.Customer && settings.Orientation == PageOrientation.Landscape)
+            (paperWidth, paperHeight) = (paperHeight, paperWidth);
+        float totalWidth = settings.PaperKind == PaperKind.Customer
+            ? Math.Max(paperWidth, margins.Left + contentWidth + margins.Right) : paperWidth;
+        float totalHeight = settings.PaperKind == PaperKind.Customer
+            ? Math.Max(paperHeight, margins.Top + contentHeight + margins.Bottom) : paperHeight;
 
         return new CalculatedPageLayout(
             page,

@@ -22,6 +22,9 @@ public sealed class Document
     /// </summary>
     public IList<Page> Pages => _pages;
 
+    /// <summary>获取当前文档的总页数（页面/工作表数量）。</summary>
+    public int PageCount => _pages.Count;
+
     /// <summary>
     /// 获取默认页面（若不存在则自动创建首页）。
     /// </summary>

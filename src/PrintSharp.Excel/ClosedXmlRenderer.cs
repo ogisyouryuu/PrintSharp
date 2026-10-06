@@ -104,6 +104,17 @@ public sealed class ClosedXmlRenderer
 
         var ws = workbook.Worksheets.Add(uniqueName);
 
+        if (page.Settings.PaperKind != PaperKind.Customer)
+            ws.PageSetup.PaperSize = page.Settings.PaperKind switch
+            {
+                PaperKind.A5 => XLPaperSize.A5Paper,
+                PaperKind.B5 => XLPaperSize.B5Paper,
+                PaperKind.A4 => XLPaperSize.A4Paper,
+                PaperKind.B4 => XLPaperSize.B4Paper,
+                PaperKind.A3 => XLPaperSize.A3Paper,
+                _ => throw new ArgumentOutOfRangeException(nameof(page.Settings.PaperKind))
+            };
+
         // 设置页面方向与打印参数
         ws.PageSetup.PageOrientation = page.Settings.Orientation == PageOrientation.Landscape
             ? XLPageOrientation.Landscape

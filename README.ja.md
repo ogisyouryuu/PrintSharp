@@ -135,6 +135,17 @@ document.SaveAsExcel("invoice.xlsx");
 document.SaveAsPdf("invoice.pdf");
 ```
 
+## 用紙サイズとページ数
+
+`page.Settings = new PageSettings { PaperKind = PaperKind.A4 }` で用紙サイズを選択できます。
+Fluent API では `p.Settings(s => s.PaperKind(PaperKind.A4))` を使用します。
+A5、B5、A4、B4、A3、Customer に対応しています。B 系列は ISO 規格の寸法を使用します。
+標準用紙の寸法はポイント（1 インチ = 72 ポイント）で表し、横向きのレイアウトでは幅と高さを自動的に入れ替えます。
+任意の寸法には `s.Size(300, 400)` を使用します。この呼び出しは Customer を選択します。
+既定の Customer は、内容に応じてサイズを調整する従来の動作を維持します。
+`page.CurrentPageNumber` は `page.PageNumber` と同期し、`document.PageCount` は現在のページ数／ワークシート数を返します。
+この数には、プリンターがワークシートを自動的に分割して生成する追加の印刷ページは含まれません。
+
 ## パッケージ
 
 | パッケージ | 目的 | 主な依存関係 |

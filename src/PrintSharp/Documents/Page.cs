@@ -18,6 +18,13 @@ public sealed class Page
     /// </summary>
     public int PageNumber { get; set; } = 1;
 
+    /// <summary>获取或设置当前页码，与 PageNumber 同步。</summary>
+    public int CurrentPageNumber
+    {
+        get => PageNumber;
+        set => PageNumber = value;
+    }
+
     /// <summary>
     /// 获取或设置页面名称（对应 Excel 的工作表名，例如 "Sheet1"）。
     /// </summary>

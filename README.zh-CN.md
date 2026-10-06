@@ -164,3 +164,13 @@ dotnet test PrintSharp.slnx
 ## 许可证
 
 基于 [MIT License](LICENSE) 发布。
+
+## 纸张与页数
+
+通过 `page.Settings = new PageSettings { PaperKind = PaperKind.A4 }` 选择纸张，
+或在 Fluent API 中使用 `p.Settings(s => s.PaperKind(PaperKind.A4))`。
+支持 A5、B5、A4、B4、A3 和 Customer；B 系列采用 ISO 尺寸。
+标准尺寸以点（72 点/英寸）表示，横向布局自动交换宽高。
+自定义尺寸使用 `s.Size(300, 400)`，这会选择 Customer；默认 Customer 保留内容自适应行为。
+`page.CurrentPageNumber` 与 `page.PageNumber` 同步，`document.PageCount` 实时返回页面/工作表数量，
+不代表打印机对工作表自动分页后的物理页数。
