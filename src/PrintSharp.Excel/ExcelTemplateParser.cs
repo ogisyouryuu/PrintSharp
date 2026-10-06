@@ -1,11 +1,10 @@
-using System.Collections;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using PrintSharp.Cells;
 using PrintSharp.Documents;
 using PrintSharp.Grid;
 using PrintSharp.Styles;
+using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace PrintSharp.Excel;
 
@@ -16,6 +15,7 @@ namespace PrintSharp.Excel;
 public sealed partial class ExcelTemplateParser
 {
     private static readonly Regex PlaceholderRegex = CreatePlaceholderRegex();
+    private readonly ITemplateValueResolver _valueResolver;
 
     [GeneratedRegex(@"\{\{([^}]+)\}\}")]
     private static partial Regex CreatePlaceholderRegex();
@@ -24,6 +24,15 @@ public sealed partial class ExcelTemplateParser
     /// 获取全局默认模板解析器单例。
     /// </summary>
     public static ExcelTemplateParser Instance { get; } = new();
+
+    /// <summary>
+    /// Creates an Excel template parser with the specified value resolver.
+    /// </summary>
+    /// <param name="valueResolver">Resolver used to access template data, or <see langword="null"/> for the default POCO and dictionary resolver.</param>
+    public ExcelTemplateParser(ITemplateValueResolver? valueResolver = null)
+    {
+        _valueResolver = valueResolver ?? new DefaultTemplateValueResolver();
+    }
 
     /// <summary>
     /// 解析 Excel 模板文件为 PrintSharp <see cref="Document"/> 网格模型。
@@ -236,7 +245,7 @@ public sealed partial class ExcelTemplateParser
         return renderedDoc;
     }
 
-    private static Page RenderPageData(Page templatePage, object data)
+    private Page RenderPageData(Page templatePage, object data)
     {
         var newPage = new Page(templatePage.Name, templatePage.PageNumber)
         {
@@ -305,7 +314,7 @@ public sealed partial class ExcelTemplateParser
         return newPage;
     }
 
-    private static (string CollectionName, IEnumerable<object> Items)? FindCollectionReference(
+    private (string CollectionName, IEnumerable<object> Items)? FindCollectionReference(
         List<Cell> cells, object rootData)
     {
         foreach (var cell in cells)
@@ -320,8 +329,9 @@ public sealed partial class ExcelTemplateParser
                 if (dotIdx > 0)
                 {
                     string candidateCol = path[..dotIdx];
-                    var val = GetNestedValue(rootData, candidateCol);
-                    if (val is IEnumerable enumerable and not string)
+                    var val = _valueResolver.Resolve(rootData, candidateCol);
+                    if (val is IEnumerable enumerable and not string &&
+                        val is not IDictionary<string, object?> and not IDictionary)
                     {
                         var list = enumerable.Cast<object>().ToList();
                         return (candidateCol, list);
@@ -333,7 +343,7 @@ public sealed partial class ExcelTemplateParser
         return null;
     }
 
-    private static Cell BindCellWithItemContext(
+    private Cell BindCellWithItemContext(
         Cell cell, int targetRow, object item, string collectionName, object rootData)
     {
         object? val = cell.Value;
@@ -345,11 +355,11 @@ public sealed partial class ExcelTemplateParser
                 if (path.StartsWith(collectionName + ".", StringComparison.OrdinalIgnoreCase))
                 {
                     string subPath = path[(collectionName.Length + 1)..];
-                    var subVal = GetNestedValue(item, subPath);
+                    var subVal = _valueResolver.Resolve(item, subPath);
                     return subVal?.ToString() ?? "";
                 }
                 // 否则尝试从根对象取
-                var rootVal = GetNestedValue(rootData, path);
+                var rootVal = _valueResolver.Resolve(rootData, path);
                 return rootVal?.ToString() ?? "";
             });
         }
@@ -357,7 +367,7 @@ public sealed partial class ExcelTemplateParser
         return new Cell(targetRow, cell.Column, val, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
     }
 
-    private static Cell BindCellGeneral(Cell cell, int targetRow, object rootData)
+    private Cell BindCellGeneral(Cell cell, int targetRow, object rootData)
     {
         object? val = cell.Value;
         if (cell.Value is string str && str.Contains("{{"))
@@ -367,58 +377,20 @@ public sealed partial class ExcelTemplateParser
             if (singleMatch.Success && singleMatch.Value == str.Trim())
             {
                 string path = singleMatch.Groups[1].Value.Trim();
-                val = GetNestedValue(rootData, path);
+                val = _valueResolver.Resolve(rootData, path);
             }
             else
             {
                 val = PlaceholderRegex.Replace(str, m =>
                 {
                     string path = m.Groups[1].Value.Trim();
-                    var v = GetNestedValue(rootData, path);
+                    var v = _valueResolver.Resolve(rootData, path);
                     return v?.ToString() ?? "";
                 });
             }
         }
 
         return new Cell(targetRow, cell.Column, val, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
-    }
-
-    private static object? GetNestedValue(object? target, string path)
-    {
-        if (target is null || string.IsNullOrWhiteSpace(path)) return null;
-
-        string[] parts = path.Split('.');
-        object? current = target;
-
-        foreach (var part in parts)
-        {
-            if (current is null) return null;
-
-            if (current is IDictionary<string, object?> dict)
-            {
-                dict.TryGetValue(part, out current);
-                continue;
-            }
-
-            if (current is IDictionary nonGenericDict)
-            {
-                current = nonGenericDict.Contains(part) ? nonGenericDict[part] : null;
-                continue;
-            }
-
-            var prop = current.GetType().GetProperty(part, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (prop is not null)
-            {
-                current = prop.GetValue(current);
-            }
-            else
-            {
-                var field = current.GetType().GetField(part, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                current = field?.GetValue(current);
-            }
-        }
-
-        return current;
     }
 
     private static (object? Value, CellType Type) ExtractCellValue(IXLCell xlCell)

@@ -1,3 +1,4 @@
+using System.Collections;
 using ClosedXML.Excel;
 using PrintSharp.Documents;
 using PrintSharp.Styles;
@@ -8,6 +9,99 @@ namespace PrintSharp.Excel.Tests;
 public class ExcelTemplateParserTests
 {
     private record ItemDto(string Name, int Qty, decimal Price);
+    private sealed class ResolverRoot
+    {
+        public ResolverCustomer? Customer { get; init; }
+        public string? MissingValue { get; init; }
+        public string PublicField = "field-value";
+    }
+
+    private sealed class ResolverCustomer
+    {
+        public string Name { get; init; } = string.Empty;
+    }
+
+    private sealed class FixedValueResolver : ITemplateValueResolver
+    {
+        public object? Resolve(object? data, string path) => path switch
+        {
+            "Name" => "Generated Name",
+            _ => null
+        };
+    }
+
+    [Fact]
+    public void ReflectionValueResolver_ShouldResolvePocoNestedPropertiesFieldsAndCaseInsensitivePaths()
+    {
+        var resolver = new ReflectionValueResolver();
+        var data = new ResolverRoot { Customer = new ResolverCustomer { Name = "Taro" } };
+
+        Assert.Equal("Taro", resolver.Resolve(data, "customer.name"));
+        Assert.Equal("field-value", resolver.Resolve(data, "publicfield"));
+        Assert.Null(resolver.Resolve(data, "Customer.Missing"));
+        Assert.Null(resolver.Resolve(new ResolverRoot(), "Customer.Name"));
+        Assert.Null(resolver.Resolve(data, "Missing"));
+    }
+
+    [Fact]
+    public void DictionaryValueResolver_ShouldResolveGenericAndNonGenericDictionaries()
+    {
+        var resolver = new DictionaryValueResolver();
+        var genericData = new Dictionary<string, object?>
+        {
+            ["Customer"] = new Dictionary<string, object?> { ["Name"] = "Taro" },
+            ["NullValue"] = null
+        };
+        IDictionary nonGenericData = new Hashtable { ["Customer"] = new Hashtable { ["Name"] = "Hanako" } };
+
+        Assert.Equal("Taro", resolver.Resolve(genericData, "Customer.Name"));
+        Assert.Equal("Hanako", resolver.Resolve(nonGenericData, "Customer.Name"));
+        Assert.Null(resolver.Resolve(genericData, "Customer.Missing"));
+        Assert.Null(resolver.Resolve(genericData, "NullValue"));
+    }
+
+    [Fact]
+    public void ExcelTemplateParser_ShouldAcceptCustomResolver()
+    {
+        using var workbook = new XLWorkbook();
+        workbook.Worksheets.Add("Sheet1").Cell("A1").Value = "{{Name}}";
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var parser = new ExcelTemplateParser(new FixedValueResolver());
+        var document = parser.Render(template, new object());
+
+        Assert.Equal("Generated Name", document.DefaultPage.FindCell(0, 0)?.Value);
+    }
+
+    [Fact]
+    public void ExcelTemplateParser_ShouldBindNestedDictionariesAndDictionaryCollectionRows()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Sheet1");
+        worksheet.Cell("A1").Value = "{{Customer.Name}}";
+        worksheet.Cell("A2").Value = "{{Items.Name}}";
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var data = new Dictionary<string, object?>
+        {
+            ["Customer"] = new Dictionary<string, object?> { ["Name"] = "Taro" },
+            ["Items"] = new[]
+            {
+                new Dictionary<string, object?> { ["Name"] = "One" },
+                new Dictionary<string, object?> { ["Name"] = "Two" }
+            }
+        };
+
+        var document = ExcelTemplateParser.Instance.Render(template, data);
+
+        Assert.Equal("Taro", document.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("One", document.DefaultPage.FindCell(1, 0)?.Value);
+        Assert.Equal("Two", document.DefaultPage.FindCell(2, 0)?.Value);
+    }
 
     [Fact]
     public void Parse_RoundTrip_ShouldReconstructGridDocument()
