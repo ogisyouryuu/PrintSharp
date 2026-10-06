@@ -10,3 +10,4 @@ obj/
 *.log
 *.userosscache
 BenchmarkDotNet.Artifacts/
+artifacts/

@@ -5,9 +5,9 @@
 **Grid-first document generation for .NET**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ogisyouryuu/PrintSharp/blob/main/LICENSE)
 
-[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+[English](https://github.com/ogisyouryuu/PrintSharp/blob/main/README.md) · [简体中文](https://github.com/ogisyouryuu/PrintSharp/blob/main/README.zh-CN.md) · [日本語](https://github.com/ogisyouryuu/PrintSharp/blob/main/README.ja.md)
 
 </div>
 
@@ -151,7 +151,7 @@ document.SaveAsPdf("invoice.pdf");
 3. **Renderer-neutral core.** The core uses logical dimensions and `FontSpec`; Excel widths, PDF points, GDI+ units, and concrete fonts stay outside the core.
 4. **Excel is a first-class design surface.** An Excel workbook can be both an output target and a visual template for PDF or print output.
 
-For the complete architecture rationale (Chinese), see [PrintSharp Architecture: Excel Grid-first](src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md).
+For the complete architecture rationale (Chinese), see [PrintSharp Architecture: Excel Grid-first](https://github.com/ogisyouryuu/PrintSharp/blob/main/src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_%E4%B8%AD%E6%96%87%E7%89%88.md).
 
 ## Development
 
@@ -163,12 +163,18 @@ The solution includes unit tests for the core grid/layout model, fluent API, sty
 
 ## License
 
-Distributed under the [MIT License](LICENSE).
+Distributed under the [MIT License](https://github.com/ogisyouryuu/PrintSharp/blob/main/LICENSE).
 
 ## Windows Forms demo
 
-The [WinForms demo](demos/PrintSharp.WinForms.Demo/README.md) includes an editable 100-row DataGridView, code-built and Excel-template reports, Japanese hotel receipts and invoices, Excel/PDF export, and an embedded Windows print preview. Run it on Windows with:
+The [WinForms demo](https://github.com/ogisyouryuu/PrintSharp/tree/main/demos/PrintSharp.WinForms.Demo) includes an editable 100-row DataGridView, code-built and Excel-template reports, Japanese hotel receipts and invoices, Excel/PDF export, and an embedded Windows print preview. Run it on Windows with:
 
 ```bash
 dotnet run --project demos/PrintSharp.WinForms.Demo
 ```
+
+## NuGet publishing
+
+Create a version tag such as `v0.1.0` to run the release workflow. It builds and tests the solution, packs the four library packages, validates their contents, builds a local package consumer, and publishes to NuGet.org through Trusted Publishing.
+
+Configure a GitHub Actions repository variable named `NUGET_USER` with the NuGet.org profile name. On NuGet.org, add a Trusted Publishing policy for repository owner `ogisyouryuu`, repository `PrintSharp`, and workflow file `nuget.yml`. Grant the policy permission to publish new package versions for the four `PrintSharp*` packages.

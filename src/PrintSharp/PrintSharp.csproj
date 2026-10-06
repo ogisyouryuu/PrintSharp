@@ -9,7 +9,6 @@
 		<!-- NuGet -->
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<PackageId>PrintSharp</PackageId>
-		<Version>0.1.0</Version>
 
 		<Title>PrintSharp</Title>
 		<Description>
@@ -30,11 +29,16 @@
 
 		<!-- Source Link / debugging -->
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 
 		<!-- NuGet symbols -->
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.303" PrivateAssets="all" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="..\..\README.md"

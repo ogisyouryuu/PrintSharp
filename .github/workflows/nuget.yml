@@ -1,0 +1,66 @@
+name: NuGet Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.401
+      - name: Validate release tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') {
+            throw "Release tag must match vMAJOR.MINOR.PATCH: $tag"
+          }
+          "version=$($tag.Substring(1))" >> $env:GITHUB_OUTPUT
+      - run: dotnet restore PrintSharp.slnx
+      - run: dotnet build PrintSharp.slnx -c Release --no-restore
+      - run: dotnet test PrintSharp.slnx -c Release --no-build
+      - name: Pack libraries
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:GITHUB_WORKSPACE 'artifacts/packages'
+          New-Item -ItemType Directory -Path $output -Force | Out-Null
+          $version = '${{ steps.version.outputs.version }}'
+          $projects = @(
+            'src/PrintSharp/PrintSharp.csproj',
+            'src/PrintSharp.Excel/PrintSharp.Excel.csproj',
+            'src/PrintSharp.Pdf/PrintSharp.Pdf.csproj',
+            'src/PrintSharp.Windows/PrintSharp.Windows.csproj'
+          )
+          foreach ($project in $projects) {
+            dotnet pack $project -c Release --no-build --no-restore -p:PackageVersion=$version -p:PackageOutputPath=$output
+            if ($LASTEXITCODE -ne 0) { throw "Packing failed: $project" }
+          }
+      - name: Validate packages and consumer restore
+        run: python eng/validate-packages.py artifacts/packages ${{ steps.version.outputs.version }}
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ vars.NUGET_USER }}
+      - name: Publish packages
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          Get-ChildItem -LiteralPath artifacts/packages -Filter *.nupkg | ForEach-Object {
+            dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+            if ($LASTEXITCODE -ne 0) { throw "NuGet push failed: $($_.Name)" }
+          }

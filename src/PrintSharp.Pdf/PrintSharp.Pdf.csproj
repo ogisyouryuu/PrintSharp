@@ -8,7 +8,6 @@
 		<!-- NuGet -->
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<PackageId>PrintSharp.Pdf</PackageId>
-		<Version>0.1.0</Version>
 
 		<Title>PrintSharp.Pdf</Title>
 		<Description>
@@ -18,12 +17,24 @@
 		<Authors>ogisyouryuu</Authors>
 		<PackageTags>printing;pdf;pdfsharp;document;report</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="PDFsharp" Version="6.2.4" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.303" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 	<ItemGroup>
