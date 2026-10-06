@@ -28,6 +28,16 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
+		<ProjectReference Include="..\PrintSharp.Excel.SourceGenerator\PrintSharp.Excel.SourceGenerator.csproj"
+			OutputItemType="Analyzer"
+			ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\PrintSharp.Excel.SourceGenerator\bin\$(Configuration)\netstandard2.0\PrintSharp.Excel.SourceGenerator.dll"
+			Pack="true"
+			PackagePath="analyzers\dotnet\cs\"
+			Visible="false" />
 	</ItemGroup>
 
 </Project>

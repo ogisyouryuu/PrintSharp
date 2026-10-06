@@ -1,10 +1,29 @@
 using System.Collections;
 using ClosedXML.Excel;
 using PrintSharp.Documents;
+using PrintSharp.Excel;
 using PrintSharp.Styles;
 using Xunit;
 
 namespace PrintSharp.Excel.Tests;
+
+[GenerateTemplateBindings]
+public sealed class GeneratedInvoiceData
+{
+    public GeneratedCustomerData? Customer { get; init; }
+    public decimal Total { get; init; }
+    public List<GeneratedItemData> Items { get; init; } = new();
+}
+
+public sealed class GeneratedCustomerData
+{
+    public string Name { get; init; } = string.Empty;
+}
+
+public sealed class GeneratedItemData
+{
+    public string Name { get; init; } = string.Empty;
+}
 
 public class ExcelTemplateParserTests
 {
@@ -101,6 +120,52 @@ public class ExcelTemplateParserTests
         Assert.Equal("Taro", document.DefaultPage.FindCell(0, 0)?.Value);
         Assert.Equal("One", document.DefaultPage.FindCell(1, 0)?.Value);
         Assert.Equal("Two", document.DefaultPage.FindCell(2, 0)?.Value);
+    }
+
+    [Fact]
+    public void GeneratedTemplateResolver_ShouldUseDirectAccessForRootNestedAndCollectionValues()
+    {
+        var resolver = new GeneratedInvoiceDataTemplateValueResolver();
+        var data = new GeneratedInvoiceData
+        {
+            Customer = new GeneratedCustomerData { Name = "Taro" },
+            Total = 12.5m,
+            Items = new List<GeneratedItemData> { new() { Name = "Item A" } }
+        };
+
+        Assert.Equal("Taro", resolver.Resolve(data, "customer.name"));
+        Assert.Equal(12.5m, resolver.Resolve(data, "Total"));
+        Assert.Equal(data.Items, resolver.Resolve(data, "Items"));
+        Assert.Equal("Item A", resolver.Resolve(data.Items[0], "Name"));
+        Assert.Null(resolver.Resolve(new GeneratedInvoiceData(), "Customer.Name"));
+    }
+
+    [Fact]
+    public void ExcelTemplateParser_ShouldRenderWithGeneratedTemplateResolver()
+    {
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Sheet1");
+        worksheet.Cell("A1").Value = "{{Customer.Name}}";
+        worksheet.Cell("A2").Value = "{{Items.Name}}";
+        worksheet.Cell("B2").Value = "{{Total}}";
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var data = new GeneratedInvoiceData
+        {
+            Customer = new GeneratedCustomerData { Name = "Taro" },
+            Total = 12.5m,
+            Items = new List<GeneratedItemData> { new() { Name = "Item A" }, new() { Name = "Item B" } }
+        };
+        var parser = new ExcelTemplateParser(new GeneratedInvoiceDataTemplateValueResolver());
+
+        var document = parser.Render(template, data);
+
+        Assert.Equal("Taro", document.DefaultPage.FindCell(0, 0)?.Value);
+        Assert.Equal("Item A", document.DefaultPage.FindCell(1, 0)?.Value);
+        Assert.Equal("12.5", document.DefaultPage.FindCell(1, 1)?.Value);
+        Assert.Equal("Item B", document.DefaultPage.FindCell(2, 0)?.Value);
     }
 
     [Fact]
