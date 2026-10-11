@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "PrintSharp.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "api/v1/health",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:14880;http://localhost:14881"
+    }
+  }
+}

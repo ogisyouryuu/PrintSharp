@@ -2,6 +2,8 @@
 
 # PrintSharp
 
+HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 文件上传的 Excel 模板、通用 JSON 多表数据及 PDF/XLSX 二进制响应，包含运行方式、请求示例和配置说明。
+
 **面向 .NET 的 Grid-first 文档生成库**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)

@@ -19,6 +19,8 @@ Create one Excel-like grid document, then render it consistently to **Excel**, *
 
 > **Status:** early-stage library (`0.1.0`). The public API and renderer behavior may evolve before a stable release.
 
+HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
+
 ## Why PrintSharp?
 
 Traditional reporting systems often start with absolute coordinates and try to convert them to Excel later. Small coordinate differences can create extra Excel columns and break the intended layout.
