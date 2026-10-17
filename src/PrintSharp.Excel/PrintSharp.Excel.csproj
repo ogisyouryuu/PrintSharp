@@ -30,7 +30,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="ClosedXML" Version="0.105.1" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.303" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="all" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -39,17 +39,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
-		<ProjectReference Include="..\PrintSharp.Excel.SourceGenerator\PrintSharp.Excel.SourceGenerator.csproj"
-			OutputItemType="Analyzer"
-			GlobalPropertiesToRemove="PublishAot;RuntimeIdentifier"
-			ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\PrintSharp.Excel.SourceGenerator\PrintSharp.Excel.SourceGenerator.csproj" OutputItemType="Analyzer" GlobalPropertiesToRemove="PublishAot;RuntimeIdentifier" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\PrintSharp.Excel.SourceGenerator\bin\$(Configuration)\netstandard2.0\PrintSharp.Excel.SourceGenerator.dll"
-			Pack="true"
-			PackagePath="analyzers\dotnet\cs\"
-			Visible="false" />
+		<None Include="..\PrintSharp.Excel.SourceGenerator\bin\$(Configuration)\netstandard2.0\PrintSharp.Excel.SourceGenerator.dll" Pack="true" PackagePath="analyzers\dotnet\cs\" Visible="false" />
 	</ItemGroup>
 
 </Project>
