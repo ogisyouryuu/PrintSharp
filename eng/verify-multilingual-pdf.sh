@@ -8,10 +8,17 @@ port=${PRINTSHARP_VERIFY_PORT:-5098}
 output=${1:-"$repo/output/pdf/rocky-verification"}
 mkdir -p "$output"
 output=$(cd "$output" && pwd)
-publish="$repo/artifacts/multilingual-api"
-demo="$repo/artifacts/multilingual-demo"
-dotnet publish src/PrintSharp.Api -c Release -r linux-x64 --self-contained true -o "$publish" -v quiet
-dotnet publish demos/PrintSharp.Multilingual.Demo -c Release -r linux-x64 --self-contained true -o "$demo" -v quiet
+publish="$repo/artifacts/skia-api"
+demo="$repo/artifacts/skia-demo"
+# Windows と WSL で NuGet の絶対パスを共有しないよう、中間生成物を分離します。
+build_artifacts=${PRINTSHARP_VERIFY_ARTIFACTS:-/tmp/printsharp-pdf-verify-build}
+dotnet publish src/PrintSharp.Api --artifacts-path "$build_artifacts" -c Release -r linux-x64 --self-contained true -o "$publish" -v quiet
+dotnet publish demos/PrintSharp.Multilingual.Demo --artifacts-path "$build_artifacts" -c Release -r linux-x64 --self-contained true -o "$demo" -v quiet
+if find "$publish" -iname '*pdfsharp*' -print -quit | grep -q .; then
+    echo "Unexpected legacy PDF dependency in publish directory" >&2
+    exit 1
+fi
+if grep -qi 'pdfsharp' "$publish/PrintSharp.Api.deps.json"; then exit 1; fi
 (cd "$publish" && exec ./PrintSharp.Api --urls "http://127.0.0.1:$port") > "$output/api.log" 2>&1 &
 api_pid=$!
 trap 'kill "$api_pid" 2>/dev/null || true; wait "$api_pid" 2>/dev/null || true' EXIT

@@ -7,7 +7,7 @@ using BorderStyle = PrintSharp.Styles.BorderStyle;
 
 namespace PrintSharp.WinForms.Demo;
 
-public enum ReportKind { Code, GridTemplate, HotelReceipt, HotelInvoice, DataSet, AutomaticPagination }
+public enum ReportKind { Code, GridTemplate, HotelReceipt, HotelInvoice, DataSet, AutomaticPagination, Multilingual }
 
 public static class ReportService
 {
@@ -26,6 +26,7 @@ public static class ReportService
             ReportKind.Code => BuildCode(records),
             ReportKind.DataSet => BuildDataSetTemplate(records),
             ReportKind.AutomaticPagination => AutomaticPaginationReport.Build(records),
+            ReportKind.Multilingual => MultilingualReport.Build(records),
             _ => BuildTemplate(kind, records)
         };
     }

@@ -3,7 +3,7 @@ using System.Text;
 using SkiaSharp;
 using Topten.RichTextKit;
 
-namespace PrintSharp.Api;
+namespace PrintSharp.Pdf;
 
 /// <summary>同梱フォントを一度だけ読み込み、OS のフォント検索に依存しない組版を提供します。</summary>
 public sealed class NotoFontRegistry : FontMapper, IDisposable
@@ -12,8 +12,10 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
     private readonly Dictionary<(string Family, bool Bold), SKTypeface> _faces = new();
     private static readonly string[] Families = ["NotoSansCJKjp", "NotoSerifCJKjp", "NotoSansArabic", "NotoSans"];
 
+    /// <summary>アプリケーション出力先の Fonts を共有します。</summary>
     public static new NotoFontRegistry Default => Shared.Value;
 
+    /// <summary>指定したフォルダーから Noto フォントを読み込みます。</summary>
     public NotoFontRegistry(string directory)
     {
         try
@@ -30,9 +32,11 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
         catch { Dispose(); throw; }
     }
 
+    /// <inheritdoc/>
     public override SKTypeface TypefaceFromStyle(IStyle style, bool ignoreFontVariants) =>
         _faces[(NormalizeFamily(style.FontFamily), style.FontWeight >= 600)];
 
+    /// <summary>論理フォント名を同梱フォントの名前に正規化します。</summary>
     public static string NormalizeFamily(string? family) => family?.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant() switch
     {
         "notoserifcjkjp" or "msmincho" or "ｍｓ明朝" or "yumincho" or "游明朝" or "timesnewroman" => "NotoSerifCJKjp",
@@ -41,7 +45,7 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
         _ => "NotoSansCJKjp"
     };
 
-    // 結合文字を分断せず、各書記素を実際のグリフ収録状況で解決します。
+    /// <summary>結合文字を分断せず、各書記素を実際のグリフ収録状況で解決します。</summary>
     public IEnumerable<(string Text, string Family)> ResolveRuns(string text, string? family, bool bold)
     {
         string preferred = NormalizeFamily(family);
@@ -70,6 +74,7 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
     private static bool IsLayoutControl(Rune rune) => Rune.GetUnicodeCategory(rune) is
         UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator;
 
+    /// <summary>所有するネイティブフォントを解放します。</summary>
     public void Dispose()
     {
         foreach (var face in _faces.Values) face.Dispose();

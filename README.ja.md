@@ -30,7 +30,7 @@ PrintSharp は Excel と互換性のあるグリッドから開始します。
         ┌───────────┼───────────┐
         ▼           ▼           ▼
       Excel        PDF       Windows
-    ClosedXML    PDFsharp  PrintDocument
+    ClosedXML    SkiaSharp  PrintDocument
 ```
 
 コアモデルはレンダラーに依存しません。論理サイズを出力先固有の物理単位に変換するのは、出力境界のレンダラーだけです。
@@ -43,7 +43,7 @@ PrintSharp は Excel と互換性のあるグリッドから開始します。
 - 物理セル境界を共有して算出するレイアウト計算
 - ClosedXML による Excel の出力と読み込み
 - Excel テンプレートのプレースホルダー束縛と繰り返し行の展開
-- PDFsharp による PDF 出力
+- SkiaSharp による PDF 出力
 - Windows `PrintDocument` のレンダリングと印刷
 - テキスト、数値、日付、数式、画像バイト配列のセル値
 - フォント、色、罫線、余白、配置、折り返し、数値書式
@@ -187,11 +187,13 @@ Excel テンプレートは `ExcelTemplateParser.Instance.RenderReport(path, dat
 
 ## パッケージ
 
+PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します。公開時は `Fonts/`、`Licenses/`、ネイティブライブラリも配置してください。`SaveAsPdf()` と `ToPdfBytes()` の呼び出し方は維持し、`ToPdfDocument()` は読み取り専用の `RenderedPdfDocument` を返します。詳細は [PDF バックエンド移行](doc/pdf-backend-migration.md) を参照してください。
+
 | パッケージ | 目的 | 主な依存関係 |
 | --- | --- | --- |
 | `PrintSharp` | グリッドドキュメントモデル、スタイル、Fluent API、レイアウトエンジン | — |
 | `PrintSharp.Excel` | `.xlsx` レンダラーとテンプレートパーサー | ClosedXML |
-| `PrintSharp.Pdf` | PDF レンダラー | PDFsharp |
+| `PrintSharp.Pdf` | PDF レンダラー | SkiaSharp |
 | `PrintSharp.Windows` | Windows 印刷レンダラー | `PrintDocument` / GDI+ |
 
 ## 設計原則

@@ -219,7 +219,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     {
         var response = await _factory.CreateClient().PostAsJsonAsync("/api/v1/print/pdf", Request(columnFormat: "#,##0.00"));
         response.EnsureSuccessStatusCode();
-        using var pdf = PdfSharp.Pdf.IO.PdfReader.Open(new MemoryStream(await response.Content.ReadAsByteArrayAsync()), PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
-        Assert.True(pdf.PageCount > 0);
+        using var pdf = UglyToad.PdfPig.PdfDocument.Open(await response.Content.ReadAsByteArrayAsync());
+        Assert.True(pdf.NumberOfPages > 0);
     }
 }

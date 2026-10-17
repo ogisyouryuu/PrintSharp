@@ -1,5 +1,8 @@
 name                                 type              encoding         emb sub uni object ID
 ------------------------------------ ----------------- ---------------- --- --- --- ---------
+NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes      5  0
+NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes      6  0
+NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes      7  0
 NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes      8  0
 NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes      9  0
 NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     10  0
@@ -7,10 +10,10 @@ NotoSansCJKjp-Bold                   Type 3            Custom           yes no  
 NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     12  0
 NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     13  0
 NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     14  0
-NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     15  0
-NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     16  0
-NotoSansCJKjp-Bold                   Type 3            Custom           yes no  yes     17  0
-NotoSansArabic-Bold                  CID TrueType      Identity-H       yes no  yes     18  0
+NotoSansArabic-Bold                  CID TrueType      Identity-H       yes no  yes     15  0
+NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     16  0
+NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     17  0
+NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     18  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     19  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     20  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     21  0
@@ -48,15 +51,12 @@ NotoSansCJKjp-Regular                Type 3            Custom           yes no  
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     53  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     54  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     55  0
-NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     56  0
+NotoSansArabic-Regular               CID TrueType      Identity-H       yes no  yes     56  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     57  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     58  0
-NotoSansArabic-Regular               CID TrueType      Identity-H       yes no  yes     59  0
+NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     59  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     60  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     61  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     62  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     63  0
 NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     64  0
-NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     65  0
-NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     66  0
-NotoSansCJKjp-Regular                Type 3            Custom           yes no  yes     67  0

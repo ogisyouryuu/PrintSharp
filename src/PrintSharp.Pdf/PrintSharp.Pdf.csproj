@@ -11,11 +11,11 @@
 
 		<Title>PrintSharp.Pdf</Title>
 		<Description>
-			PDF renderer and Fluent document export extensions for PrintSharp using PDFsharp.
+			Multilingual vector PDF renderer and Fluent document export extensions for PrintSharp using SkiaSharp.
 		</Description>
 
 		<Authors>ogisyouryuu</Authors>
-		<PackageTags>printing;pdf;pdfsharp;document;report</PackageTags>
+		<PackageTags>printing;pdf;skia;document;report;multilingual</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -29,9 +29,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PDFsharp" Version="6.2.4" />
+		<PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="7.3.0.3" />
+		<PackageReference Include="SkiaSharp.HarfBuzz" Version="2.88.9" />
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
+		<PackageReference Include="Topten.RichTextKit" Version="0.4.167" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="all" />
-		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -40,6 +42,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="Fonts/**/*;Licenses/**/*" />
+		<Content Include="Fonts/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Fonts/" PackageCopyToOutput="true" />
+		<Content Include="Licenses/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Licenses/" PackageCopyToOutput="true" />
 	</ItemGroup>
 
 </Project>

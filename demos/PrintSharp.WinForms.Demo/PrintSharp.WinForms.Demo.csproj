@@ -11,5 +11,6 @@
     <ProjectReference Include="../../src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <ProjectReference Include="../../src/PrintSharp.Windows/PrintSharp.Windows.csproj" />
     <Content Include="Templates/*.xlsx" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../Shared/MultilingualSamples.cs" Link="MultilingualSamples.cs" />
   </ItemGroup>
 </Project>

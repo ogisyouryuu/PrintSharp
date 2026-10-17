@@ -60,6 +60,15 @@ internal static class SmokeTest
                 if (heights.Length != 2 || !heights.Contains(24) || !heights.Contains(36))
                     throw new InvalidOperationException("異なる明細行高の例が作成されていません。");
             }
+            if (kind == ReportKind.Multilingual)
+            {
+                var memos = document.Pages.SelectMany(page => page.Cells.Where(cell => cell.Column == 2 && cell.ColumnSpan == 1 &&
+                    cell.Row >= page.Context!.SourcePage.Pagination!.HeaderRowCount &&
+                    cell.Row < page.Context.SourcePage.Pagination.HeaderRowCount + page.Context.BodyRowCount))
+                    .Select(cell => Convert.ToString(cell.Value)).ToArray();
+                if (!memos.SequenceEqual(data.Select(record => record.Memo)))
+                    throw new InvalidOperationException("多言語メモの欠落、順序違い、または内容の変更があります。");
+            }
             string excelPath = Path.Combine(directory, $"{kind}.xlsx");
             logical.SaveAsExcel(excelPath);
             using var workbook = new XLWorkbook(excelPath);

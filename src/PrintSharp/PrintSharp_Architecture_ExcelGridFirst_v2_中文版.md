@@ -1,5 +1,7 @@
 # PrintSharp Architecture
 
+> 历史设计文档：保留最初采用 PDFsharp 的设计论述。2026-10-17 起，实际 PDF 后端已迁移到 SkiaSharp；当前接口和迁移说明见仓库根目录 `doc/pdf-backend-migration.md`。
+
 # PrintSharp 架构设计
 
 > **核心定位：Excel Grid-first 的通用文档生成与打印中间件**

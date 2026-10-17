@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Options;
 using PrintSharp.Api;
+using PrintSharp.Pdf;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOptions<PrintApiOptions>().BindConfiguration("PrintApi").Validate(o => o.IsValid(), "Limits must be positive.").ValidateOnStart();

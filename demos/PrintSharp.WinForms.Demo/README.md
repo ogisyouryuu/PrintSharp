@@ -10,7 +10,7 @@
 dotnet run --project demos/PrintSharp.WinForms.Demo
 ```
 
-也可以在 Visual Studio 中将 `PrintSharp.WinForms.Demo` 设置为启动项目。需要 .NET 10 SDK、Windows，以及可用的 Windows 打印机驱动（例如 Microsoft Print to PDF）。PDF 日文输出使用 Windows Meiryo / Meiryo Bold 字体；缺少时安装日语补充字体。
+也可以在 Visual Studio 中将 `PrintSharp.WinForms.Demo` 设置为启动项目。需要 .NET 10 SDK、Windows，以及可用的 Windows 打印机驱动（例如 Microsoft Print to PDF）。PDF 使用随包携带的 Noto 字体；Windows 原生打印仍使用模板指定的系统字体。
 
 ## 操作
 
@@ -26,6 +26,7 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 | 日本酒店请求书 | `HotelInvoice.xlsx`，默认每页 20 行 | 5 |
 | DataSet 数据绑定 | `DataSet.xlsx`；`DataSet` 中的 `Report` 与 `Items` 两张表，默认每页 32 行 | 4 |
 | 自动分页报表（不同明细行高） | 独立 `AutomaticPaginationReport`；24/36 点明细行高，由库自动换页 | 5 |
+| 混合语言备注（中日韩阿拉伯文） | 独立 `MultilingualReport`；每条备注 78 点，使用随包携带的 Noto 字体 | 13 |
 
 每个物理页对应一个 Excel 工作表、一页 PDF 和一页打印预览。酒店单据演示一张多页单据，包含抬头、编号、宿泊期间、全单金额、明细、每页小计、含税金额、内消费税和支付信息。总金额在各页重复显示，不能将这些总金额再次相加。所有酒店、客户、登记号码和银行信息均为虚构样例。
 
@@ -36,6 +37,14 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 用纸为 A4 纵向，上下左右余白均为 24 点。普通明细为 24 点，住宿 3 泊及以上的明细为 36 点，并在姓名下方显示“連泊プラン”。标题、表头和页尾每页重复，`PageValue` 显示当前页、总页数、本页条数、每页小计和末页说明。
 
 默认 100 条数据自动分为 5 页，分别包含 22、22、21、21、14 条明细。可修改左侧“泊数”，再生成预览，观察明细行高、分页位置和金额变化。行高由示例明确指定；文本折行本身不会自动测量或增加行高。
+
+## 混合语言示例
+
+选择“7. 混合语言备注（中日韩阿拉伯文）”。左侧显示编号、宿泊者、客室和可编辑的 Memo 列。100 条数据循环使用八组语言样例，与命令行多语言演示共用 `demos/Shared/MultilingualSamples.cs`。
+
+样例包括简繁中文、日语、韩语、阿拉伯语，以及同一 Memo 内混合多种语言、数字、标点、显式换行和长文本自动折行。修改 Memo 后，可通过现有按钮导出 Excel、PDF 或生成 Windows 打印预览；导出包含全部 100 条数据。`MultilingualReport.cs` 演示 `WrapText()`、单元格内边距、重复表头、页码和自动分页的组合。
+
+PDF 通过 Noto 字体回退和 HarfBuzz 排版生成，可在 Linux 使用相同报表代码。右侧预览使用 Windows 原生打印器和系统字体，并非 PDF 预览。示例明细行高固定为 78 点，默认每页八条；输入更长的备注时，应相应增加行高，避免文本超出单元格后被裁切。
 
 ## Excel 模板
 
@@ -55,12 +64,13 @@ PrintSharp 库根据 A4 纵向高度自动分页：扣除上下各 24 点余白�
 
 ## 代码入口
 
-- `MainForm.cs`：表格绑定、六种示例选择、文件导出、PrintPreviewControl 和 PrintDocument 生命周期。
+- `MainForm.cs`：表格绑定、七种示例选择、文件导出、PrintPreviewControl 和 PrintDocument 生命周期。
 - `StayRecord.cs`：100 行数据模型和展示值。
 - `ReportService.cs`：报表区域声明、POCO 与 DataSet 模板绑定、分页后小计。
 - `AutomaticPaginationReport.cs`：独立的不同明细行高自动分页示例。
+- `MultilingualReport.cs`：独立的混合语言 Memo 报表；共享样例位于 `../Shared/MultilingualSamples.cs`。
 - `TemplateFactory.cs`：缺失模板的生成示例，包含 DataSet 模板。
-- `Program.cs` / `TrueTypeCollection.cs`：日文字体解析和 TTC 到独立 SFNT 的转换，供 PDFsharp 嵌入字体。
+- `Program.cs`：应用启动和冒烟验证入口；PDF 使用 PrintSharp.Pdf 随包携带的 Noto 字体，不再需要 TTC 转换或 PDFsharp 字体注册。
 
 ## 验证
 
@@ -69,4 +79,4 @@ dotnet run --project demos/PrintSharp.WinForms.Demo -- --smoke-test C:/Temp/Prin
 dotnet test PrintSharp.slnx
 ```
 
-冒烟验证实例化主窗体，并对六种示例检查 100 行编号连续且无遗漏、模板占位符全部替换、扣除余白后的 A4 布局边界、非末页剩余高度不足以放下下一条明细的实际行高、Excel 工作表数与 PDF 页数一致。新增示例还验证不同明细行高、每页条数、页码和每页小计。在可用打印机驱动存在时，还通过 PreviewPrintController 实际生成所有预览页并核对页数，不发送打印任务。输出目录包含 Excel、PDF、首页预览 PNG 和完成标记；无打印机驱动时跳过预览验证。
+冒烟验证实例化主窗体，并对七种示例检查 100 行编号连续且无遗漏、模板占位符全部替换、扣除余白后的 A4 布局边界、非末页剩余高度不足以放下下一条明细的实际行高、Excel 工作表数与 PDF 页数一致。自动分页示例还验证不同明细行高、每页条数、页码和每页小计；混合语言示例验证全部 Memo 分页后的内容与顺序保持一致。在可用打印机驱动存在时，还通过 PreviewPrintController 实际生成所有预览页并核对页数，不发送打印任务。输出目录包含 Excel、PDF、首页预览 PNG 和完成标记；无打印机驱动时跳过预览验证。

@@ -32,7 +32,7 @@ PrintSharp 从 Excel 兼容的网格开始：
     ┌───────────┼───────────┐
     ▼           ▼           ▼
   Excel        PDF       Windows
-ClosedXML    PDFsharp  PrintDocument
+ClosedXML    SkiaSharp  PrintDocument
 ```
 
 核心模型不绑定任何渲染器。只有在输出边界，渲染器才将逻辑尺寸映射为其自身的物理单位。
@@ -45,7 +45,7 @@ ClosedXML    PDFsharp  PrintDocument
 - 共享的物理单元格边界布局计算
 - 基于 ClosedXML 的 Excel 导出与导入
 - Excel 模板占位符绑定和重复行展开
-- 基于 PDFsharp 的 PDF 导出
+- 基于 SkiaSharp 的 PDF 导出
 - Windows `PrintDocument` 渲染和打印
 - 文本、数值、日期、公式和图片字节数组单元格值
 - 字体、颜色、边框、内边距、对齐、换行和数字格式
@@ -139,11 +139,13 @@ document.SaveAsPdf("invoice.pdf");
 
 ## 包
 
+PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布时保留 `Fonts/`、`Licenses/` 及原生运行库。`SaveAsPdf()`、`ToPdfBytes()` 保留调用方式，`ToPdfDocument()` 改为返回只读的 `RenderedPdfDocument`。接口变化与 Linux 部署见 [PDF 后端迁移说明](doc/pdf-backend-migration.md)。
+
 | 包 | 用途 | 主要依赖 |
 | --- | --- | --- |
 | `PrintSharp` | 网格文档模型、样式、Fluent API 与布局引擎 | — |
 | `PrintSharp.Excel` | `.xlsx` 渲染器和模板解析器 | ClosedXML |
-| `PrintSharp.Pdf` | PDF 渲染器 | PDFsharp |
+| `PrintSharp.Pdf` | PDF 渲染器 | SkiaSharp |
 | `PrintSharp.Windows` | Windows 打印渲染器 | `PrintDocument` / GDI+ |
 
 ## 设计原则

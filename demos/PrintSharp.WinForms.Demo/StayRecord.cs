@@ -1,4 +1,5 @@
 using System.Globalization;
+using PrintSharp.Demos;
 
 namespace PrintSharp.WinForms.Demo;
 
@@ -11,6 +12,7 @@ public sealed class StayRecord
     public int Nights { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal Amount => Nights * UnitPrice;
+    public string Memo { get; set; } = "";
 
     public static List<StayRecord> CreateSamples() => Enumerable.Range(1, 100).Select(i => new StayRecord
     {
@@ -19,7 +21,8 @@ public sealed class StayRecord
         Room = $"{201 + (i - 1) % 20}",
         Date = new DateTime(2026, 10, 1).AddDays((i - 1) % 25),
         Nights = 1 + (i - 1) % 3,
-        UnitPrice = 8000 + (i - 1) % 4 * 1500
+        UnitPrice = 8000 + (i - 1) % 4 * 1500,
+        Memo = MultilingualSamples.Memos[(i - 1) % MultilingualSamples.Memos.Count]
     }).ToList();
 
     // 三つのレンダラーで同じ金額・日付を表示するため、表示文字列を用意する。

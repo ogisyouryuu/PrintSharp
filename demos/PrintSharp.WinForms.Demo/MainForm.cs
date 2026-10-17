@@ -25,7 +25,7 @@ public sealed class MainForm : Form
         MinimumSize = new Size(1000, 650);
         Font = new Font("Microsoft YaHei UI", 9);
         var tools = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(8), WrapContents = true };
-        _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）", "5. DataSet 数据绑定", "6. 自动分页报表（不同明细行高）"]);
+        _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）", "5. DataSet 数据绑定", "6. 自动分页报表（不同明细行高）", "7. 混合语言备注（中日韩阿拉伯文）"]);
         _report.SelectedIndex = 0;
         tools.Controls.Add(_report);
         AddButton(tools, "导出 Excel", () => Export(false));
@@ -36,7 +36,7 @@ public sealed class MainForm : Form
         tools.Controls.Add(new Label { Text = "预览页", AutoSize = true, Padding = new Padding(0, 7, 0, 0) });
         tools.Controls.Add(_page);
         _page.ValueChanged += (_, _) => _preview.StartPage = (int)_page.Value - 1;
-        _report.SelectedIndexChanged += (_, _) => ClearPreview();
+        _report.SelectedIndexChanged += (_, _) => { UpdateReportColumns(); ClearPreview(); };
         var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, Size = new Size(1400, 800), SplitterDistance = 650 };
         split.Panel1.Controls.Add(_grid);
         split.Panel2.Controls.Add(_preview);
@@ -52,6 +52,10 @@ public sealed class MainForm : Form
         AddColumn(nameof(StayRecord.Nights), "泊数");
         AddColumn(nameof(StayRecord.UnitPrice), "单价", "N0");
         AddColumn(nameof(StayRecord.Amount), "金额", "N0", true);
+        AddColumn(nameof(StayRecord.Memo), "备注 Memo");
+        _grid.Columns[^1].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+        _grid.Columns[^1].FillWeight = 400;
+        UpdateReportColumns();
         _grid.DataSource = _source;
         _grid.DataError += (_, e) => { e.ThrowException = false; _status.Text = "输入格式不正确，请检查日期或数值。"; };
         _grid.CellValueChanged += (_, _) => { _grid.Invalidate(); ClearPreview(); };
@@ -67,6 +71,21 @@ public sealed class MainForm : Form
             ReadOnly = readOnly,
             DefaultCellStyle = new DataGridViewCellStyle { Format = format ?? "" }
         });
+    }
+
+    private void UpdateReportColumns()
+    {
+        bool multilingual = (ReportKind)_report.SelectedIndex == ReportKind.Multilingual;
+        foreach (DataGridViewColumn column in _grid.Columns)
+        {
+            column.Visible = column.DataPropertyName switch
+            {
+                nameof(StayRecord.Memo) => multilingual,
+                nameof(StayRecord.Date) or nameof(StayRecord.Nights) or nameof(StayRecord.UnitPrice) or nameof(StayRecord.Amount) => !multilingual,
+                _ => true
+            };
+        }
+        _grid.AutoSizeRowsMode = multilingual ? DataGridViewAutoSizeRowsMode.DisplayedCells : DataGridViewAutoSizeRowsMode.None;
     }
 
     private void AddButton(FlowLayoutPanel panel, string text, Action action)
@@ -138,7 +157,9 @@ public sealed class MainForm : Form
         _printDocument = null;
         _page.Value = 1;
         _page.Maximum = 1;
-        _status.Text = "可编辑左侧 100 行数据，选择示例后导出或生成右侧预览。";
+        _status.Text = (ReportKind)_report.SelectedIndex == ReportKind.Multilingual
+            ? "可编辑左侧备注；同一 Memo 支持中日韩阿拉伯文混排，导出完整 100 行。右侧为 Windows 原生打印预览。"
+            : "可编辑左侧 100 行数据，选择示例后导出或生成右侧预览。";
     }
 
     protected override void Dispose(bool disposing)

@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc.Testing;
-using PdfSharp.Pdf.IO;
+using PrintSharp.Pdf;
 using Topten.RichTextKit;
 using Xunit;
 
@@ -76,8 +76,8 @@ public sealed class MultilingualPdfTests : IClassFixture<WebApplicationFactory<P
             using var response = await client.PostAsJsonAsync("/api/v1/print/pdf", request);
             response.EnsureSuccessStatusCode();
             byte[] bytes = await response.Content.ReadAsByteArrayAsync();
-            using var pdf = PdfReader.Open(new MemoryStream(bytes), PdfDocumentOpenMode.Import);
-            Assert.Single(pdf.Pages.Cast<PdfSharp.Pdf.PdfPage>());
+            using var pdf = UglyToad.PdfPig.PdfDocument.Open(bytes);
+            Assert.Equal(1, pdf.NumberOfPages);
             string content = Encoding.Latin1.GetString(bytes);
             Assert.Contains("NotoSansArabic", content);
             Assert.Contains("/FontFile2", content);

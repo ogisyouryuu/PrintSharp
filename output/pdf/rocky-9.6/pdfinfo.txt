@@ -1,6 +1,4 @@
-Creator:        PDFsharp 6.2.4 (www.pdfsharp.com)
-Producer:       PDFsharp 6.2.4
-CreationDate:   Sat Oct 17 20:48:06 2026 JST
+Creator:        PrintSharp
 Tagged:         no
 UserProperties: no
 Suspects:       no
@@ -10,6 +8,6 @@ Pages:          1
 Encrypted:      no
 Page size:      800 x 1146.67 pts
 Page rot:       0
-File size:      326636 bytes
+File size:      335516 bytes
 Optimized:      no
-PDF version:    1.7
+PDF version:    1.4

@@ -9,7 +9,7 @@ public sealed record PdfRenderOptions
     /// <summary>Core 字体解析器；未指定时使用默认解析器。</summary>
     public PrintSharp.Layout.Fonts.IFontResolver? FontResolver { get; init; }
 
-    /// <summary>多言語の文字組版を行う任意のレンダラー。指定時は XFont と FontResolver より優先されます。</summary>
+    /// <summary>任意の文字レンダラー。未指定時は同梱 Noto フォントと HarfBuzz で描画します。</summary>
     public IPdfTextRenderer? TextRenderer { get; init; }
 
     /// <summary>默认 PDF 渲染选项。</summary>

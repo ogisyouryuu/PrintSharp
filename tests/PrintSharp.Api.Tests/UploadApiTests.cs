@@ -65,8 +65,8 @@ public class UploadApiTests(WebApplicationFactory<Program> factory) : IClassFixt
         if (route == "pdf")
         {
             Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(bytes));
-            using var pdf = PdfSharp.Pdf.IO.PdfReader.Open(new MemoryStream(bytes), PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
-            Assert.True(pdf.PageCount > 0);
+            using var pdf = UglyToad.PdfPig.PdfDocument.Open(bytes);
+            Assert.True(pdf.NumberOfPages > 0);
         }
         else
         {

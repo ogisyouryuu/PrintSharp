@@ -4,7 +4,6 @@ using ClosedXML.Excel;
 using PrintSharp.Documents;
 using PrintSharp.Excel;
 using PrintSharp.Pdf;
-using PdfSharp.Fonts;
 using PrintSharp.Styles;
 using Xunit;
 
@@ -330,7 +329,6 @@ public class ExcelTemplateParserTests
         byte[] pdf;
         if (OperatingSystem.IsWindows())
         {
-            GlobalFontSettings.UseWindowsFontsUnderWindows = true;
             pdf = document.ToPdfBytes();
         }
         else

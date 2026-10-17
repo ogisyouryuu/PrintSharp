@@ -1,5 +1,8 @@
 name                                 type              encoding         emb sub uni object ID
 ------------------------------------ ----------------- ---------------- --- --- --- ---------
+[none]                               Type 3            Custom           yes no  yes      5  0
+[none]                               Type 3            Custom           yes no  yes      6  0
+[none]                               Type 3            Custom           yes no  yes      7  0
 [none]                               Type 3            Custom           yes no  yes      8  0
 [none]                               Type 3            Custom           yes no  yes      9  0
 [none]                               Type 3            Custom           yes no  yes     10  0
@@ -7,10 +10,10 @@ name                                 type              encoding         emb sub 
 [none]                               Type 3            Custom           yes no  yes     12  0
 [none]                               Type 3            Custom           yes no  yes     13  0
 [none]                               Type 3            Custom           yes no  yes     14  0
-[none]                               Type 3            Custom           yes no  yes     15  0
+NotoSansArabic-Bold                  CID TrueType      Identity-H       yes no  yes     15  0
 [none]                               Type 3            Custom           yes no  yes     16  0
 [none]                               Type 3            Custom           yes no  yes     17  0
-NotoSansArabic-Bold                  CID TrueType      Identity-H       yes no  yes     18  0
+[none]                               Type 3            Custom           yes no  yes     18  0
 [none]                               Type 3            Custom           yes no  yes     19  0
 [none]                               Type 3            Custom           yes no  yes     20  0
 [none]                               Type 3            Custom           yes no  yes     21  0
@@ -48,15 +51,12 @@ NotoSansArabic-Bold                  CID TrueType      Identity-H       yes no  
 [none]                               Type 3            Custom           yes no  yes     53  0
 [none]                               Type 3            Custom           yes no  yes     54  0
 [none]                               Type 3            Custom           yes no  yes     55  0
-[none]                               Type 3            Custom           yes no  yes     56  0
+NotoSansArabic-Regular               CID TrueType      Identity-H       yes no  yes     56  0
 [none]                               Type 3            Custom           yes no  yes     57  0
 [none]                               Type 3            Custom           yes no  yes     58  0
-NotoSansArabic-Regular               CID TrueType      Identity-H       yes no  yes     59  0
+[none]                               Type 3            Custom           yes no  yes     59  0
 [none]                               Type 3            Custom           yes no  yes     60  0
 [none]                               Type 3            Custom           yes no  yes     61  0
 [none]                               Type 3            Custom           yes no  yes     62  0
 [none]                               Type 3            Custom           yes no  yes     63  0
 [none]                               Type 3            Custom           yes no  yes     64  0
-[none]                               Type 3            Custom           yes no  yes     65  0
-[none]                               Type 3            Custom           yes no  yes     66  0
-[none]                               Type 3            Custom           yes no  yes     67  0

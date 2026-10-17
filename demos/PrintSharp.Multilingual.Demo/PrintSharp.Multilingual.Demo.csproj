@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/PrintSharp.Api/PrintSharp.Api.csproj" />
+    <Compile Include="../Shared/MultilingualSamples.cs" Link="MultilingualSamples.cs" />
   </ItemGroup>
 </Project>

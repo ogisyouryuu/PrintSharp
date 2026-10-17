@@ -10,7 +10,7 @@
 | 目标版本 | WSL2 `RockyLinux-9.6`，Rocky Linux 9.6 (Blue Onyx)，glibc 2.34，x64 |
 | 最新版本 | WSL2 `RockyLinux-10`，Rocky Linux 10.2 (Red Quartz)，x64 |
 | 发布方式 | Release、linux-x64、自包含 |
-| 文字链路 | Noto → RichTextKit 0.4.167 → HarfBuzzSharp 7.3.0.3 / SkiaSharp 2.88.9 → PDFsharp 6.2.4 |
+| 输出链路 | Noto → RichTextKit 0.4.167 → HarfBuzzSharp 7.3.0.3 / SkiaSharp 2.88.9 → PDF |
 
 两个 WSL 均使用 Rocky 官方 WSL 镜像独立导入。镜像下载后核对官方 SHA-256：
 
@@ -31,9 +31,10 @@
 | 检查 | Windows | Rocky 9.6 | Rocky 10.2 |
 |---|---|---|---|
 | API 测试，包含多语言和并发 | 90/90 | 90/90 | 90/90 |
-| PDF 库测试 | 8/8 | 8/8 | 8/8 |
+| PDF 库测试 | 21/21 | 21/21 | 21/21 |
 | Excel 测试 | 19/19 | — | — |
 | Core 测试 | 55/55 | — | — |
+| Windows 打印适配器测试 | 6/6 | — | — |
 | 真实 HTTP 上传并生成混合语言 PDF | — | 通过 | 通过 |
 | Poppler 字体检查 | — | 字形全部嵌入 | 字形全部嵌入 |
 | Poppler 图像检查 | — | 0 个位图图像 | 0 个位图图像 |
@@ -42,7 +43,7 @@
 Windows 整个 `PrintSharp.slnx` 构建成功，0 警告、0 错误。
 `dotnet list src/PrintSharp.Api package --include-transitive --vulnerable` 未报告当前 NuGet 源中的已知漏洞。
 
-新增测试不仅检查 PDF 文件头：还检查混合 memo 的字体回退覆盖、组合标记、RTL / LTR 排版段、上下文字形替换、换行、无缺失字形、字体缺失时启动失败、未知字形明确失败，以及并发真实 HTTP 请求返回包含字体和 Unicode 映射的矢量 PDF。
+新增测试不仅检查 PDF 文件头：还检查混合 memo 的字体回退覆盖、组合标记、RTL / LTR 排版段、上下文字形替换、换行、无缺失字形、字体缺失时启动失败、未知字形明确失败，以及并发真实 HTTP 请求返回包含字体和 Unicode 映射的矢量 PDF。PDF 库测试使用独立的 PdfPig 读取实际输出，核对物理分页、用纸尺寸、元数据、图片的缩放及合并区域、各类矢量边框和背景，以及结果快照的保存/释放行为。
 
 两个环境均执行：
 
@@ -61,6 +62,6 @@ bash eng/verify-multilingual-pdf.sh output/pdf/rocky-verification
 
 ## 适用范围
 
-验证环境为真实 Rocky 用户空间和 WSL2 Linux 内核，尚未连接用户的 VPS；x64 结果不能替代 ARM64 的原生依赖验证。PDFsharp 固定 6.2.4（MIT），避免 6.5.0 的 AGPL / 商业许可证加载要求；相关许可文本随发布包提供。
+验证环境为真实 Rocky 用户空间和 WSL2 Linux 内核，尚未连接用户的 VPS；x64 结果不能替代 ARM64 的原生依赖验证。当前实现完全移除 PDFsharp。字体和 Skia / HarfBuzz / RichTextKit 的相关许可文本随发布包提供。后端迁移与旧版对照记录见 `pdf-backend-migration.md`。
 
-这次验收针对显示与打印。当前 CJK CFF 字体由 Skia 以 Type 3 矢量字形输出，阿拉伯文使用嵌入的 TrueType；复杂文本在不同阅读器中复制或提取时可能产生字符归一化、重复字形映射或方向差异，不保证原始字符串无损往返。未承诺全部 Unicode、emoji、地区字形自动切换、斜体字形或超出固定行高后的自动增高。
+这次验收针对显示与打印。当前 CJK CFF 字体由 Skia 以 Type 3 矢量字形输出，阿拉伯文使用嵌入的 TrueType；复杂文本在不同阅读器中复制或提取时可能产生字符归一化、重复字形映射或方向差异，不保证原始字符串无损往返。斜体使用模拟字形；未承诺全部 Unicode、emoji、地区字形自动切换、原生 Italic 字体或超出固定行高后的自动增高。

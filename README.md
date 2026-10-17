@@ -36,7 +36,7 @@ Grid document (rows + columns + spans + styles)
         ┌───────────┼───────────┐
         ▼           ▼           ▼
       Excel        PDF       Windows
-    ClosedXML    PDFsharp  PrintDocument
+    ClosedXML    SkiaSharp  PrintDocument
 ```
 
 The core model stays renderer-neutral. Renderers map logical dimensions to their own units only at the output boundary.
@@ -49,7 +49,7 @@ The core model stays renderer-neutral. Renderers map logical dimensions to their
 - Shared layout calculation for physical cell bounds
 - Excel export and import through ClosedXML
 - Excel-template placeholder binding, including repeated rows
-- PDF export through PDFsharp
+- PDF export through SkiaSharp
 - Windows `PrintDocument` rendering and printing
 - Cell values for text, numbers, dates, formulas, and image byte arrays
 - Fonts, colors, borders, padding, alignment, wrapping, and number formats
@@ -191,11 +191,13 @@ Custom paper requires positive width and height. Text wrapping does not automati
 
 ## Packages
 
+PDF output uses SkiaSharp with bundled Noto fonts and HarfBuzz shaping. Keep the `Fonts/`, `Licenses/` and native runtime assets when publishing. `SaveAsPdf()` and `ToPdfBytes()` retain their call signatures; `ToPdfDocument()` now returns a read-only `RenderedPdfDocument`. See [PDF backend migration](doc/pdf-backend-migration.md) for API changes and Linux deployment.
+
 | Package | Purpose | Primary dependency |
 | --- | --- | --- |
 | `PrintSharp` | Grid document model, styles, fluent API, and layout engine | — |
 | `PrintSharp.Excel` | `.xlsx` renderer and template parser | ClosedXML |
-| `PrintSharp.Pdf` | PDF renderer | PDFsharp |
+| `PrintSharp.Pdf` | PDF renderer | SkiaSharp |
 | `PrintSharp.Windows` | Windows printing renderer | `PrintDocument` / GDI+ |
 
 ## Design principles
