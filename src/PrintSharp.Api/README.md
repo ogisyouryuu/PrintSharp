@@ -12,7 +12,60 @@ Visual Studio 中将 `PrintSharp.Api` 设为启动项目，选择 `PrintSharp.Ap
 dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080
 ```
 
-配置见 `appsettings.json` 的 `PrintApi` 节。环境变量可覆盖，例如 `PrintApi__MaxConcurrency=1`、`PrintApi__PdfFontPath=C:\fonts\unicode.ttf`。字体路径只能由服务端配置，不能由请求指定。Windows 默认读取 Arial TTF；Linux 部署必须配置可用 TTF。当前 PDF 使用该字体替代模板字体，粗体/斜体由 PDFsharp 模拟；中文、日文需要覆盖相应字符的字体及合法授权。
+配置见 `appsettings.json` 的 `PrintApi` 节。环境变量可覆盖，例如 `PrintApi__MaxConcurrency=1`。PDF 默认使用随服务发布的 `Fonts/` 中的 Noto 字体，不需要安装 Windows 字体或单独配置字体路径。旧的 `PrintApi__PdfFontPath` 配置已移除；迁移时删除该环境变量。字体文件名区分大小写，缺失或损坏时启动失败。
+
+## Linux 多语言 PDF
+
+启动时 `NotoFontRegistry` 按 `AppContext.BaseDirectory/Fonts` 注册字体，沿用 UniGridPro.Report 的“随应用携带字体、一次加载、使用逻辑字体名”方式。字体文件直接复制自该项目。`NotoSansCJKjp` / `NotoSerifCJKjp` 提供中日韩字符和拉丁文，`NotoSansArabic` 提供阿拉伯文，`NotoSans` 作为额外回退；每组包含 Regular / Bold。
+
+单个单元格（例如 `{{Details.Memo}}`）按 Unicode 书写素的实际字形覆盖拆分字体段，不拆开基础字符和组合标记。RichTextKit / HarfBuzz 处理阿拉伯文上下文字形、双向文本、数字以及换行。Skia 生成包含字形的矢量 PDF 文字层，PDFsharp 仍负责页面、单元格、边框、图片及最终 PDF 合成。CJK OTF/CFF 在此路径中以 Type 3 矢量字形写入，阿拉伯文字体以 TrueType 嵌入；接收端无需安装字体，不会把整页变成位图。
+
+模板中的 `NotoSansCJKjp`、`Noto Sans CJK JP` 以及未知/系统字体统一映射到 Noto Sans CJK JP。`NotoSerifCJKjp`、`MS Mincho`、`Yu Mincho`、`ＭＳ 明朝`、`游明朝`、`Times New Roman` 映射到 Noto Serif CJK JP。`NotoSansArabic` 和 `NotoSans` 可显式指定。默认 CJK 使用日文字形习惯，支持简繁中文及韩文字符，但不按语言自动切换地区字形。粗体使用真实 Bold 文件；未携带斜体字体，斜体请求回退为直立字形。
+
+混合语言示例：`Memo: 中文欢迎 / 日本語ようこそ / 한국어 환영합니다 / العربية مرحبًا بكم / English ABC-123.`，无需客户端拆分字段或设置字体段。纯阿拉伯段落的 General 对齐按首个强方向字符自动右对齐；显式 Left / Center / Right 保留模板对齐。
+
+固定行高不自动扩展；请为 memo 设置 WrapText 和足够的行高。超出的文字裁剪在单元格范围内。字体覆盖之外的字符会明确报错，不会静默替换成方框；本方案不承诺 emoji 或全部 Unicode 字符。此版本优先保证打印，复杂文本的搜索、复制、提取顺序可能因查看器而异，不保证原始字符串逐字往返。
+
+### 混合语言报表代码演示
+
+完整可编译项目见 `demos/PrintSharp.Multilingual.Demo/Program.cs`：它用 ClosedXML 创建含 `{{Details.Memo}}` 的模板，将八条中日韩阿拉伯样例（含混排、音标、括号数字和长文本）送入与 API 相同的生成服务，也支持向真实 HTTP 接口发送请求。
+
+```powershell
+# API と同じ処理をプロセス内で実行します。
+dotnet run --project demos/PrintSharp.Multilingual.Demo -- output/pdf/local
+
+# 起動済み API に multipart で送信します。
+dotnet run --project demos/PrintSharp.Multilingual.Demo -- output/pdf/http http://127.0.0.1:5080/
+```
+
+输出包含 `multilingual.pdf`、可复用的 `template.xlsx`、`data.json` 及环境记录。PDF 扩展仍可在其他项目中使用，显式传入 `new PdfRenderOptions { TextRenderer = new NotoPdfTextRenderer(NotoFontRegistry.Default) }`；现有未设置 TextRenderer 的 PrintSharp.Pdf 调用保持原来的 XFont 路径。
+
+### Rocky Linux 9.6 / 10 部署
+
+在 Windows 或 Linux 发布自包含的 x64 包：
+
+```powershell
+dotnet publish src/PrintSharp.Api -c Release -r linux-x64 --self-contained true -o artifacts/publish/linux-x64
+```
+
+将整个发布目录（包含 `Fonts/`、`Licenses/`、`libSkiaSharp.so` 和 `libHarfBuzzSharp.so`）复制到 VPS，例如 `/opt/printsharp`。不能只复制 DLL。
+
+```bash
+sudo dnf install -y fontconfig libicu openssl-libs
+cd /opt/printsharp
+chmod +x PrintSharp.Api
+./PrintSharp.Api --urls http://127.0.0.1:5080
+```
+
+自包含包携带 .NET Runtime，系统仍需上述原生依赖。此命令不安装中日韩/阿拉伯系统字体。以普通服务账号运行，通过现有反向代理提供外部访问。ARM64 VPS 需改为 `linux-arm64` 并在目标架构另行验证。
+
+仓库根目录提供 `bash eng/verify-multilingual-pdf.sh`，用于在装有 .NET 10 SDK、上述运行依赖和 `poppler-utils` 的 Rocky 主机上发布、启动本机 API、发送真实请求及检查 PDF 字体/图像。验证记录见 `doc/multilingual-pdf-validation.md`。
+
+### 免费商用与闭源许可
+
+本项目固定 PDFsharp **6.2.4（MIT）**。6.5.0 开始改用 AGPL / 商业双许可，并要求加载许可证；后续升级不能直接套用 MIT 的使用条件。
+
+新增文字链路采用 RichTextKit 0.4.167（Apache-2.0）、SkiaSharp / HarfBuzzSharp（MIT，原生组件另附第三方声明）、HarfBuzz（Old MIT）、Noto（SIL OFL 1.1）。这些许可允许免费商业和闭源使用，但分发时仍需保留相应版权、许可及第三方声明；OFL 不要求嵌入字体的报表使用 OFL。发布目录保留 `Fonts/OFL-*.txt` 和 `Licenses/`。详见其中的来源清单与原始许可文本。
 
 ## 路由与请求
 
@@ -252,7 +305,7 @@ static async Task SendAndSaveAsync(
 
 超时和取消是阶段间及数据/ZIP 遍历中的协作取消。现有同步核心的单次解析/渲染无法强制中断；正在执行时保留并发槽位，完成后检查取消并丢弃结果。需要硬性执行期限时应增加独立工作进程隔离。
 
-默认用于本机开发；对外发布前必须由网关或宿主配置认证/授权、HTTPS、速率限制及网络访问策略。当前服务没有内置身份认证，不应直接暴露公网。首次启动的字体配置固定于进程生命周期，修改后重启。
+默认用于本机开发；对外发布前必须由网关或宿主配置认证/授权、HTTPS、速率限制及网络访问策略。当前服务没有内置身份认证，不应直接暴露公网。字体固定于进程生命周期，替换字体文件后重启。
 
 当前不支持模板注册/持久化、数据库、上传路径、图片协议、任意 CLR 类型、Native AOT 发布保证。只保留现有核心支持的 Excel 样式/布局；宏、复杂 Excel 图表及原始 PDF 字体还原不在第一版范围。PDF 中公式不负责计算，按现有核心行为输出公式文本；不要依赖此服务计算上传公式。
 

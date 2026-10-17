@@ -1,0 +1,17 @@
+Creator:         PDFsharp 6.2.4 (www.pdfsharp.com)
+Producer:        PDFsharp 6.2.4
+CreationDate:    Sat Oct 17 20:48:52 2026 JST
+Custom Metadata: no
+Metadata Stream: yes
+Tagged:          no
+UserProperties:  no
+Suspects:        no
+Form:            none
+JavaScript:      no
+Pages:           1
+Encrypted:       no
+Page size:       800 x 1146.67 pts
+Page rot:        0
+File size:       326636 bytes
+Optimized:       no
+PDF version:     1.7

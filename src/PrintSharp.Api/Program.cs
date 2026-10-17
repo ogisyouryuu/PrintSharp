@@ -9,7 +9,7 @@ builder.Services.AddOptions<PrintApiOptions>().BindConfiguration("PrintApi").Val
 builder.WebHost.ConfigureKestrel((context, options) => options.Limits.MaxRequestBodySize =
     context.Configuration.GetValue<long?>("PrintApi:MaxRequestBytes") ?? new PrintApiOptions().MaxRequestBytes);
 builder.Services.AddSingleton<IPrintGenerationService, PrintGenerationService>();
-ApiFontResolver.Configure(builder.Configuration["PrintApi:PdfFontPath"]);
+builder.Services.AddSingleton(NotoFontRegistry.Default);
 var app = builder.Build();
 
 app.Use(async (context, next) =>

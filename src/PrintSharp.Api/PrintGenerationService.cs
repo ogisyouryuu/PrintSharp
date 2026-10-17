@@ -21,10 +21,12 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
 {
     private readonly PrintApiOptions _limits;
     private readonly SemaphoreSlim _slots;
-    public PrintGenerationService(IOptions<PrintApiOptions> options)
+    private readonly PdfRenderOptions _pdfOptions;
+    public PrintGenerationService(IOptions<PrintApiOptions> options, NotoFontRegistry? fonts = null)
     {
         _limits = options.Value;
         _slots = new(_limits.MaxConcurrency);
+        _pdfOptions = new() { TextRenderer = new NotoPdfTextRenderer(fonts ?? NotoFontRegistry.Default) };
     }
 
     public Task<byte[]> GenerateAsync(PrintRequest request, bool pdf, CancellationToken cancellationToken) =>
@@ -151,7 +153,7 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
             formatted.SaveAs(stream);
             stream.Position = 0;
             token.ThrowIfCancellationRequested();
-            output = ExcelTemplateParser.Instance.Parse(stream).ToPdfBytes();
+            output = ExcelTemplateParser.Instance.Parse(stream).ToPdfBytes(_pdfOptions);
         }
         else output = document.ToExcelBytes();
         token.ThrowIfCancellationRequested();

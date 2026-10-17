@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/demos/">
+    <Project Path="demos/PrintSharp.Multilingual.Demo/PrintSharp.Multilingual.Demo.csproj" />
     <Project Path="demos/PrintSharp.WinForms.Demo/PrintSharp.WinForms.Demo.csproj" />
   </Folder>
   <Folder Name="/src/">

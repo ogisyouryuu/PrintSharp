@@ -41,8 +41,10 @@ public sealed class PdfSharpRenderer
             if (height > 0) page.Height = XUnit.FromPoint(height);
 
             using var graphics = XGraphics.FromPdfPage(page);
+            using var textPage = options.TextRenderer?.BeginPage((float)page.Width.Point, (float)page.Height.Point);
             foreach (var cellLayout in pageLayout.Cells)
-                DrawCell(graphics, cellLayout, options);
+                DrawCell(graphics, cellLayout, options, textPage);
+            textPage?.Complete(graphics);
         }
         return pdf;
     }
@@ -73,7 +75,7 @@ public sealed class PdfSharpRenderer
         return stream.ToArray();
     }
 
-    private static void DrawCell(XGraphics gfx, CalculatedCellLayout layout, PdfRenderOptions options)
+    private static void DrawCell(XGraphics gfx, CalculatedCellLayout layout, PdfRenderOptions options, IPdfTextPage? textPage)
     {
         var cell = layout.Cell;
         var style = layout.EffectiveStyle;
@@ -97,6 +99,12 @@ public sealed class PdfSharpRenderer
         string text = Convert.ToString(cell.Value, System.Globalization.CultureInfo.CurrentCulture) ?? string.Empty;
         if (cell.Type == CellType.Formula && text.StartsWith('=')) text = text[1..];
         if (text.Length == 0 || content.Width <= 0 || content.Height <= 0) return;
+
+        if (textPage is not null)
+        {
+            textPage.DrawText(text, style, content, options.PointsPerLogicalUnit);
+            return;
+        }
 
         var fontSpec = style.Font ?? FontSpec.Default;
         var resolved = (options.FontResolver ?? DefaultFontResolver.Instance).Resolve(fontSpec);
