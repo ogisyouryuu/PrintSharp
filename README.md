@@ -231,6 +231,13 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 
 ## NuGet publishing
 
-Create a version tag such as `v0.1.0` to run the release workflow. It builds and tests the solution, packs the four library packages, validates their contents, builds a local package consumer, and publishes to NuGet.org through Trusted Publishing.
+Create and push a new version tag such as `v0.1.2` to run the release workflow:
+
+```bash
+git tag v0.1.2
+git push origin v0.1.2
+```
+
+Use an unused `vMAJOR.MINOR.PATCH` version. The workflow builds and tests the solution, packs the four library packages, validates their contents, builds a local package consumer, and publishes to NuGet.org through Trusted Publishing; no local API key is needed. See the [Chinese release guide](doc/nuget-release.zh-CN.md) for setup and recovery details.
 
 Configure a GitHub Actions repository variable named `NUGET_USER` with the NuGet.org profile name. On NuGet.org, add a Trusted Publishing policy for repository owner `ogisyouryuu`, repository `PrintSharp`, and workflow file `nuget.yml`. Grant the policy permission to publish new package versions for the four `PrintSharp*` packages.

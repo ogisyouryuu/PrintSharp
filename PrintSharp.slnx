@@ -22,4 +22,39 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/PrintSharp.Excel.Benchmarks/PrintSharp.Excel.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/Documentation/">
+    <File Path="README.md" />
+    <File Path="README.zh-CN.md" />
+    <File Path="README.ja.md" />
+    <File Path="LICENSE" />
+  </Folder>
+  <Folder Name="/Documentation/Guides/">
+    <File Path="doc/nuget-release.zh-CN.md" />
+    <File Path="doc/multilingual-pdf-validation.md" />
+    <File Path="doc/pdf-backend-migration.md" />
+    <File Path="src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md" />
+  </Folder>
+  <Folder Name="/Documentation/API/">
+    <File Path="src/PrintSharp.Api/README.md" />
+    <File Path="doc/agent/PrintSharp_Microservice_API_Agent_Spec.md" />
+  </Folder>
+  <Folder Name="/Documentation/Demos/">
+    <File Path="demos/PrintSharp.WinForms.Demo/README.md" />
+  </Folder>
+  <Folder Name="/Documentation/PDF Assets/">
+    <File Path="src/PrintSharp.Pdf/Fonts/README.md" />
+    <File Path="src/PrintSharp.Pdf/Fonts/OFL-CJK.txt" />
+    <File Path="src/PrintSharp.Pdf/Fonts/OFL-Noto.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/README.md" />
+    <File Path="src/PrintSharp.Pdf/Licenses/Apache-2.0.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/HarfBuzz-Old-MIT.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/HarfBuzzSharp-MIT.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/HarfBuzzSharp-THIRD-PARTY-NOTICES.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/RichTextKit-Apache-2.0.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/SkiaSharp-MIT.txt" />
+    <File Path="src/PrintSharp.Pdf/Licenses/SkiaSharp-THIRD-PARTY-NOTICES.txt" />
+  </Folder>
+  <Folder Name="/Documentation/Analyzer/">
+    <File Path="src/PrintSharp.Excel.SourceGenerator/AnalyzerReleases.Unshipped.md" />
+  </Folder>
 </Solution>

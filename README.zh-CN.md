@@ -148,6 +148,10 @@ PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布�
 | `PrintSharp.Pdf` | PDF 渲染器 | SkiaSharp |
 | `PrintSharp.Windows` | Windows 打印渲染器 | `PrintDocument` / GDI+ |
 
+## NuGet 发布
+
+发布不需要本机 API Key。推送新的 `vX.Y.Z` Git 标签后，GitHub Actions 会构建、测试并通过 NuGet Trusted Publishing 发布四个库包。详细步骤和首次配置见 [NuGet 发布说明](doc/nuget-release.zh-CN.md)。
+
 ## 设计原则
 
 1. **Grid-first 布局。** 单元格由行、列、`RowSpan`、`ColumnSpan` 定位；自由坐标不是主模型。
