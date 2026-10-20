@@ -2,11 +2,13 @@
 
 # PrintSharp
 
-HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 文件上传的 Excel 模板、通用 JSON 多表数据及 PDF/XLSX 二进制响应，包含运行方式、请求示例和配置说明。
-
 **面向 .NET 的 Grid-first 文档生成库**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
+[![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
+[![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
+[![PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg?label=PrintSharp.Windows)](https://www.nuget.org/packages/PrintSharp.Windows/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
@@ -15,7 +17,9 @@ HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 �
 
 使用一份类 Excel 的网格文档，同时稳定输出为 **Excel**、**PDF** 或 **Windows 打印机**。PrintSharp 以行、列和单元格跨度维护布局，而非自由的 `X` / `Y` 坐标；Excel 网格始终是布局的来源。
 
-> **状态：** 早期库（`0.1.0`）。稳定版本前，公开 API 和渲染行为可能会演进。
+> **状态：** 早期库（`0.1.1`）。稳定版本前，公开 API 和渲染行为可能会演进。
+
+HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
 ## 为什么是 PrintSharp？
 
@@ -137,41 +141,15 @@ document.SaveAsExcel("invoice.xlsx");
 document.SaveAsPdf("invoice.pdf");
 ```
 
-## 包
+## 纸张与页数
 
-PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布时保留 `Fonts/`、`Licenses/` 及原生运行库。`SaveAsPdf()`、`ToPdfBytes()` 保留调用方式，`ToPdfDocument()` 改为返回只读的 `RenderedPdfDocument`。接口变化与 Linux 部署见 [PDF 后端迁移说明](doc/pdf-backend-migration.md)。
-
-| 包 | 用途 | 主要依赖 |
-| --- | --- | --- |
-| `PrintSharp` | 网格文档模型、样式、Fluent API 与布局引擎 | — |
-| `PrintSharp.Excel` | `.xlsx` 渲染器和模板解析器 | ClosedXML |
-| `PrintSharp.Pdf` | PDF 渲染器 | SkiaSharp |
-| `PrintSharp.Windows` | Windows 打印渲染器 | `PrintDocument` / GDI+ |
-
-## NuGet 发布
-
-发布不需要本机 API Key。推送新的 `vX.Y.Z` Git 标签后，GitHub Actions 会构建、测试并通过 NuGet Trusted Publishing 发布四个库包。详细步骤和首次配置见 [NuGet 发布说明](doc/nuget-release.zh-CN.md)。
-
-## 设计原则
-
-1. **Grid-first 布局。** 单元格由行、列、`RowSpan`、`ColumnSpan` 定位；自由坐标不是主模型。
-2. **统一布局计算。** 布局引擎从网格计算物理边界，PDF 与 Windows 输出共享相同几何关系。
-3. **核心独立于渲染器。** 核心使用逻辑尺寸和 `FontSpec`；Excel 列宽、PDF point、GDI+ 单位及具体字体都处于核心之外。
-4. **Excel 是一等设计界面。** Excel 工作簿既可作为输出，也可作为 PDF 或打印输出的可视化模板。
-
-完整架构说明请见：[PrintSharp 架构：Excel Grid-first](src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md)。
-
-## 开发
-
-```bash
-dotnet test PrintSharp.slnx
-```
-
-解决方案包含核心网格/布局、Fluent API、样式、Excel 渲染与模板、PDF 渲染和 Windows 打印适配器的单元测试。
-
-## 许可证
-
-基于 [MIT License](LICENSE) 发布。
+通过 `page.Settings = new PageSettings { PaperKind = PaperKind.A4 }` 选择纸张，
+或在 Fluent API 中使用 `p.Settings(s => s.PaperKind(PaperKind.A4))`。
+支持 A5、B5、A4、B4、A3 和 Customer；B 系列采用 ISO 尺寸。
+标准尺寸以点（72 点/英寸）表示，横向布局自动交换宽高。
+自定义尺寸使用 `s.Size(300, 400)`，这会选择 Customer；默认 Customer 保留内容自适应行为。
+`page.CurrentPageNumber` 与 `page.PageNumber` 同步，`document.PageCount` 实时返回页面/工作表数量，
+不代表打印机对工作表自动分页后的物理页数。
 
 ## 报表自动分页
 
@@ -210,13 +188,54 @@ Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settin
 行组超过整页可用高度、合并单元格跨越区域边界、列宽超过可打印宽度时明确报错。
 自定义纸张须提供正的宽高。暂不根据文本折行自动测量行高；页尾紧随明细，末页不拉伸行高。
 
+## NuGet 包
 
-## 纸张与页数
+PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布时保留 `Fonts/`、`Licenses/` 及原生运行库。`SaveAsPdf()`、`ToPdfBytes()` 保留调用方式，`ToPdfDocument()` 改为返回只读的 `RenderedPdfDocument`。接口变化与 Linux 部署见 [PDF 后端迁移说明](doc/pdf-backend-migration.md)。
 
-通过 `page.Settings = new PageSettings { PaperKind = PaperKind.A4 }` 选择纸张，
-或在 Fluent API 中使用 `p.Settings(s => s.PaperKind(PaperKind.A4))`。
-支持 A5、B5、A4、B4、A3 和 Customer；B 系列采用 ISO 尺寸。
-标准尺寸以点（72 点/英寸）表示，横向布局自动交换宽高。
-自定义尺寸使用 `s.Size(300, 400)`，这会选择 Customer；默认 Customer 保留内容自适应行为。
-`page.CurrentPageNumber` 与 `page.PageNumber` 同步，`document.PageCount` 实时返回页面/工作表数量，
-不代表打印机对工作表自动分页后的物理页数。
+| 包 | 用途 | 主要依赖 |
+| --- | --- | --- |
+| `PrintSharp` | 网格文档模型、样式、Fluent API 与布局引擎 | — |
+| `PrintSharp.Excel` | `.xlsx` 渲染器和模板解析器 | ClosedXML |
+| `PrintSharp.Pdf` | PDF 渲染器 | SkiaSharp |
+| `PrintSharp.Windows` | Windows 打印渲染器 | `PrintDocument` / GDI+ |
+
+## 设计原则
+
+1. **Grid-first 布局。** 单元格由行、列、`RowSpan`、`ColumnSpan` 定位；自由坐标不是主模型。
+2. **统一布局计算。** 布局引擎从网格计算物理边界，PDF 与 Windows 输出共享相同几何关系。
+3. **核心独立于渲染器。** 核心使用逻辑尺寸和 `FontSpec`；Excel 列宽、PDF point、GDI+ 单位及具体字体都处于核心之外。
+4. **Excel 是一等设计界面。** Excel 工作簿既可作为输出，也可作为 PDF 或打印输出的可视化模板。
+
+完整架构说明请见：[PrintSharp 架构：Excel Grid-first](src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md)。
+
+## 开发
+
+```bash
+dotnet test PrintSharp.slnx
+```
+
+解决方案包含核心网格/布局、Fluent API、样式、Excel 渲染与模板、PDF 渲染和 Windows 打印适配器的单元测试。
+
+## 许可证
+
+基于 [MIT License](LICENSE) 发布。
+
+## Windows Forms 演示
+
+[WinForms 演示程序](demos/PrintSharp.WinForms.Demo)包含可编辑的 100 行 DataGridView、代码定义和 Excel 模板驱动的报表、日本酒店收据与发票、Excel/PDF 导出及嵌入式打印预览。仅支持在 Windows 上运行：
+
+```bash
+dotnet run --project demos/PrintSharp.WinForms.Demo
+```
+
+## NuGet 发布
+
+推送新的 `vMAJOR.MINOR.PATCH` Git 标签后，GitHub Actions 会构建并测试解决方案、验证四个 NuGet 包，然后通过 Trusted Publishing 发布到 NuGet.org。本机不需要 API Key。
+
+```bash
+git tag v0.1.2
+git push origin v0.1.2
+```
+
+请使用尚未发布的版本号和标签。首次配置与详细步骤见 [NuGet 发布说明](doc/nuget-release.zh-CN.md)。
+首次发布前，还需在 GitHub Actions variables 中设置 `NUGET_USER`，并在 NuGet.org Trusted Publishing 中授权仓库 `ogisyouryuu/PrintSharp` 的 `nuget.yml` 工作流发布 `PrintSharp*` 包。

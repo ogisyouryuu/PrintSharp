@@ -5,6 +5,10 @@
 **.NET 向け Grid-first ドキュメント生成ライブラリ**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
+[![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
+[![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
+[![PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg?label=PrintSharp.Windows)](https://www.nuget.org/packages/PrintSharp.Windows/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
@@ -13,7 +17,9 @@
 
 1 つの Excel ライクなグリッドドキュメントから、**Excel**、**PDF**、または **Windows プリンター**へ一貫して出力します。PrintSharp は自由な `X` / `Y` 座標ではなく、行・列・セル結合でレイアウトを保持します。Excel グリッドが常にレイアウトの基準です。
 
-> **ステータス:** 初期段階のライブラリ（`0.1.0`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
+> **ステータス:** 初期段階のライブラリ（`0.1.1`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
+
+HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
 ## PrintSharp を使う理由
 
@@ -184,7 +190,6 @@ Excel テンプレートは `ExcelTemplateParser.Instance.RenderReport(path, dat
 縦結合した行は一緒に改ページします。行グループが印刷領域に収まらない場合、結合が領域境界を跨ぐ場合、列幅が印刷領域を超える場合はエラーになります。
 任意の用紙には正の幅と高さが必要です。折り返した文字に応じた行高の自動測定は行いません。フッターは明細の直後に配置し、最終ページの行高は引き伸ばしません。
 
-
 ## パッケージ
 
 PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します。公開時は `Fonts/`、`Licenses/`、ネイティブライブラリも配置してください。`SaveAsPdf()` と `ToPdfBytes()` の呼び出し方は維持し、`ToPdfDocument()` は読み取り専用の `RenderedPdfDocument` を返します。詳細は [PDF バックエンド移行](doc/pdf-backend-migration.md) を参照してください。
@@ -216,3 +221,23 @@ dotnet test PrintSharp.slnx
 ## ライセンス
 
 [MIT License](LICENSE) の下で配布されています。
+
+## Windows Forms デモ
+
+[WinForms デモ](demos/PrintSharp.WinForms.Demo)には、編集可能な 100 行の DataGridView、コードで定義した帳票と Excel テンプレートを使った帳票、日本のホテルを想定した領収書と請求書、Excel/PDF 出力、埋め込み印刷プレビューが含まれます。Windows で次のコマンドを実行します。
+
+```bash
+dotnet run --project demos/PrintSharp.WinForms.Demo
+```
+
+## NuGet パッケージの公開
+
+新しい `vMAJOR.MINOR.PATCH` タグを push すると、GitHub Actions がソリューションをビルド／テストし、4 つの NuGet パッケージを検証して NuGet.org に公開します。ローカルの API Key は不要です。
+
+```bash
+git tag v0.1.2
+git push origin v0.1.2
+```
+
+使用済みのタグやバージョンは再利用しないでください。初回設定と詳しい手順は[中国語の NuGet 公開ガイド](doc/nuget-release.zh-CN.md)を参照してください。
+初回公開前に、GitHub Actions の variable `NUGET_USER` を設定し、NuGet.org の Trusted Publishing で `ogisyouryuu/PrintSharp` リポジトリの `nuget.yml` ワークフローに `PrintSharp*` パッケージの公開を許可してください。

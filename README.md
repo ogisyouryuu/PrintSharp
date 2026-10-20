@@ -17,7 +17,7 @@
 
 Create one Excel-like grid document, then render it consistently to **Excel**, **PDF**, or a **Windows printer**. PrintSharp keeps layout in rows, columns, and cell spans—not free-form `X`/`Y` coordinates—so the Excel grid remains the source of truth.
 
-> **Status:** early-stage library (`0.1.0`). The public API and renderer behavior may evolve before a stable release.
+> **Status:** early-stage library (`0.1.1`). The public API and renderer behavior may evolve before a stable release.
 
 HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
 
