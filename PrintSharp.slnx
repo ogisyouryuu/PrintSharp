@@ -22,6 +22,37 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/PrintSharp.Excel.Benchmarks/PrintSharp.Excel.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/docs-site/">
+    <File Path="docs-site/README.md" />
+    <File Path="docs-site/package.json" />
+    <File Path="docs-site/package-lock.json" />
+    <File Path="docs-site/.vitepress/config.ts" />
+  </Folder>
+  <Folder Name="/docs-site/Documentation Portal/">
+    <File Path="docs-site/docs/index.md" />
+  </Folder>
+  <Folder Name="/docs-site/Documentation Portal/Getting Started/">
+    <File Path="docs-site/docs/getting-started/index.md" />
+    <File Path="docs-site/docs/getting-started/development-environment.md" />
+    <File Path="docs-site/docs/getting-started/build-and-test.md" />
+    <File Path="docs-site/docs/getting-started/project-structure.md" />
+  </Folder>
+  <Folder Name="/docs-site/Documentation Portal/Architecture/">
+    <File Path="docs-site/docs/architecture/system-overview.md" />
+    <File Path="docs-site/docs/architecture/design-decisions.md" />
+  </Folder>
+  <Folder Name="/docs-site/Documentation Portal/API Reference/">
+    <File Path="docs-site/docs/api-reference/index.md" />
+  </Folder>
+  <Folder Name="/docs-site/Documentation Portal/Examples/">
+    <File Path="docs-site/docs/examples/index.md" />
+  </Folder>
+  <Folder Name="/docs-site/Documentation Portal/Operations/">
+    <File Path="docs-site/docs/operations/index.md" />
+    <File Path="docs-site/docs/operations/configuration.md" />
+    <File Path="docs-site/docs/operations/deployment.md" />
+    <File Path="docs-site/docs/operations/troubleshooting.md" />
+  </Folder>
   <Folder Name="/Documentation/">
     <File Path="README.md" />
     <File Path="README.zh-CN.md" />
