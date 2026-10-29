@@ -59,6 +59,10 @@ chmod +x PrintSharp.Api
 
 自包含包携带 .NET Runtime，系统仍需上述原生依赖。此命令不安装中日韩/阿拉伯系统字体。以普通服务账号运行，通过现有反向代理提供外部访问。ARM64 VPS 需改为 `linux-arm64` 并在目标架构另行验证。
 
+当前生产环境为 `23.238.1.37`（AlmaLinux 9.6 x64），由 `printsharp-api.service` 以 `printsharp` 系统账号运行，Nginx 将 HTTPS 请求代理到 `127.0.0.1:5080`。生产 API 地址为 `https://printsharp.ginbow.eu.org`。从仓库根目录运行 `eng/deploy.ps1 -Target api` 可自动构建、上传版本目录、切换当前版本、重启服务并检查 `/api/v1/health`。TLS 证书覆盖 API 与文档子域名，并由 Certbot 自动续期。
+
+Nginx 已限制 API 请求速率和请求体大小。API 暂无内置身份认证，生成接口可被公网访问；若业务数据只应由受限用户提交，应增加 API Key 或其他身份认证。
+
 仓库根目录提供 `bash eng/verify-multilingual-pdf.sh`，用于在装有 .NET 10 SDK、上述运行依赖和 `poppler-utils` 的 Rocky 主机上发布、启动本机 API、发送真实请求及检查 PDF 字体/图像。验证记录见 `doc/multilingual-pdf-validation.md`。
 
 ### 免费商用与闭源许可

@@ -13,6 +13,7 @@ public sealed class MainForm : Form
     private readonly DataGridView _grid = new() { Dock = DockStyle.Fill, AutoGenerateColumns = false, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill };
     private readonly PrintPreviewControl _preview = new() { Dock = DockStyle.Fill, AutoZoom = true, UseAntiAlias = true };
     private readonly ComboBox _report = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private readonly TextBox _serviceAddress = new() { Text = MicroserviceDemoClient.DefaultEndpoint, Width = 300 };
     private readonly Label _status = new() { AutoSize = true, Padding = new Padding(8) };
     private readonly NumericUpDown _page = new() { Minimum = 1, Maximum = 1, Width = 60 };
     private PrintDocument? _printDocument;
@@ -33,6 +34,10 @@ public sealed class MainForm : Form
         AddButton(tools, "打印（生成预览）", GeneratePreview);
         AddButton(tools, "重置 100 行", ResetData);
         AddButton(tools, "打开模板目录", () => { TemplateFactory.EnsureTemplates(); Process.Start(new ProcessStartInfo(TemplateFactory.DirectoryPath) { UseShellExecute = true }); });
+        tools.Controls.Add(new Label { Text = "API 地址", AutoSize = true, Padding = new Padding(4, 7, 0, 0) });
+        tools.Controls.Add(_serviceAddress);
+        AddAsyncButton(tools, "微服务生成 PDF", () => GenerateFromMicroservice(true));
+        AddAsyncButton(tools, "微服务生成 Excel", () => GenerateFromMicroservice(false));
         tools.Controls.Add(new Label { Text = "预览页", AutoSize = true, Padding = new Padding(0, 7, 0, 0) });
         tools.Controls.Add(_page);
         _page.ValueChanged += (_, _) => _preview.StartPage = (int)_page.Value - 1;
@@ -99,6 +104,23 @@ public sealed class MainForm : Form
         panel.Controls.Add(button);
     }
 
+    private void AddAsyncButton(FlowLayoutPanel panel, string text, Func<Task> action)
+    {
+        var button = new Button { Text = text, AutoSize = true };
+        button.Click += async (_, _) =>
+        {
+            button.Enabled = false;
+            try { await action(); }
+            catch (Exception ex)
+            {
+                _status.Text = "微服务调用失败。";
+                MessageBox.Show(this, ex.Message, "微服务调用失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally { button.Enabled = true; }
+        };
+        panel.Controls.Add(button);
+    }
+
     private void ResetData()
     {
         _source.DataSource = new BindingList<StayRecord>(StayRecord.CreateSamples());
@@ -107,12 +129,35 @@ public sealed class MainForm : Form
 
     private PrintSharp.Documents.Document BuildDocument()
     {
+        return ReportService.Build((ReportKind)_report.SelectedIndex, GetRecords());
+    }
+
+    private StayRecord[] GetRecords()
+    {
         if (!_grid.EndEdit()) throw new InvalidOperationException("请先修正表格中的输入。");
         _source.EndEdit();
         var records = _grid.Rows.Cast<DataGridViewRow>().Where(r => !r.IsNewRow).Select(r => (StayRecord)r.DataBoundItem!).ToArray();
         if (records.Any(x => x.Nights <= 0 || x.UnitPrice < 0 || string.IsNullOrWhiteSpace(x.Guest)))
             throw new InvalidOperationException("宿泊者不能为空，泊数须大于 0，单价不能为负数。");
-        return ReportService.Build((ReportKind)_report.SelectedIndex, records);
+        if (records.Length == 0) throw new InvalidOperationException("请先输入至少一行数据。");
+        return records;
+    }
+
+    private async Task GenerateFromMicroservice(bool pdf)
+    {
+        var records = GetRecords();
+        using var dialog = new SaveFileDialog
+        {
+            Filter = pdf ? "PDF 文件|*.pdf" : "Excel 工作簿|*.xlsx",
+            FileName = $"PrintSharp-Microservice-{DateTime.Now:yyyyMMdd-HHmmss}.{(pdf ? "pdf" : "xlsx")}",
+            OverwritePrompt = true
+        };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        _status.Text = $"正在调用 {_serviceAddress.Text.Trim()} …";
+        byte[] result = await MicroserviceDemoClient.GenerateAsync(_serviceAddress.Text, records, pdf);
+        await File.WriteAllBytesAsync(dialog.FileName, result);
+        _status.Text = $"微服务已生成文件：{dialog.FileName}";
     }
 
     private void Export(bool pdf)

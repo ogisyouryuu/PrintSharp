@@ -1,29 +1,43 @@
 # 部署
 
-本页区分两类部署：VitePress 文档门户生成静态文件；PrintSharp API 是单独的 ASP.NET Core 服务。静态门户本身不需要 .NET、数据库或业务 API。
+PrintSharp 的文档门户与 HTTP API 已部署在 `23.238.1.37`（AlmaLinux 9.6）：
 
-## 构建文档门户
+| 服务 | 地址 | 服务器运行方式 |
+|---|---|---|
+| 文档门户 | <https://printsharp-docs.ginbow.eu.org> | Nginx 托管 VitePress 静态文件 |
+| PrintSharp API | <https://printsharp.ginbow.eu.org> | Nginx 反向代理到本机 `127.0.0.1:5080` |
 
-在仓库根目录执行：
+两个域名使用同一张 Let’s Encrypt 证书，Certbot 自动续期。API 由 `printsharp-api.service` 管理，服务器不直接开放 API 进程端口。Nginx 对 API 请求限制为每个 IP 每秒 10 个请求、最多突发 10 个请求，最大请求体为 21 MiB；API 自身的请求上限仍为 20 MiB。
 
-```powershell
-Set-Location docs-site
-npm ci
-npm run docs:build
-```
+## 一键发布
 
-默认静态输出为 `docs-site/.vitepress/dist/`。将该目录内容同步到 VPS 上配置好的静态站点目录即可。默认 `base` 为 `/`，适用于站点挂载在域名根路径的情形；若部署到子路径，应设置对应 VitePress `base` 后重新构建。具体 Nginx/Caddy、TLS、域名和同步方式取决于尚未提供的 VPS 拓扑，当前标记为待确认。
-
-## API Linux 发布
-
-仓库的 API README 记录了 Rocky Linux x64 自包含发布命令：
+在仓库根目录使用 PowerShell 执行：
 
 ```powershell
-dotnet publish src/PrintSharp.Api -c Release -r linux-x64 --self-contained true -o artifacts/publish/skia-linux-x64
+.\eng\deploy.ps1
 ```
 
-已有验证说明在 Rocky 上需要 `fontconfig`、`libicu`、`openssl-libs`，并应完整保留发布目录中的字体、许可文件及 Skia/HarfBuzz 原生库。真实生产主机尚未连接或验证；ARM64 也需独立验证。实际运行用户、反向代理、认证、域名和防火墙由部署环境确认。
+脚本会构建 Linux x64 自包含 API、安装并构建文档站、通过 SSH 上传到独立版本目录，再切换 `current` 符号链接。API 发布后会重启 systemd 服务并检查健康接口；文档发布后会通过 HTTPS 检查首页。发布单项时使用：
 
-## VPS 信息待确认
+```powershell
+.\eng\deploy.ps1 -Target api
+.\eng\deploy.ps1 -Target docs
+```
 
-仓库没有 VPS 操作系统版本、架构、静态服务器软件、域名或目录权限信息。部署到用户私人 VPS 的具体配置步骤需据目标主机核实；本门户交付的是可托管的静态构建产物。
+默认 SSH 主机别名为本机 `~/.ssh/config` 中的 `pms-vps`（root@23.238.1.37）。如果你的 SSH 配置使用其他 root 主机别名，可传入：
+
+```powershell
+.\eng\deploy.ps1 -HostName root@host
+```
+
+SSH 密钥需已在本机配置。发布产物和临时压缩包放在 `artifacts/deploy/`，不会提交到 Git。
+
+## HTTPS 与访问范围
+
+HTTP 自动跳转到 HTTPS。证书覆盖上述两个主机名，Certbot 已设置自动续期任务。可以用以下地址确认 API 服务：
+
+```text
+https://printsharp.ginbow.eu.org/api/v1/health
+```
+
+API 目前没有内置身份认证，生成接口可被公网访问。若业务数据不应由任何互联网用户提交，应在调用方启用前增加 API Key 或其他身份认证机制，并在 Nginx 配置相应访问策略。文档站为公开站点。

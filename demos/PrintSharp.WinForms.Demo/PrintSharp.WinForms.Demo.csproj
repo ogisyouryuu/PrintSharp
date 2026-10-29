@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
     <ProjectReference Include="../../src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
     <ProjectReference Include="../../src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <ProjectReference Include="../../src/PrintSharp.Windows/PrintSharp.Windows.csproj" />

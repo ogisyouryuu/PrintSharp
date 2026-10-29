@@ -43,37 +43,13 @@ npm run docs:preview
 
 ## 部署到 VPS
 
-1. 在本目录安装依赖并构建：
+文档门户发布在 <https://printsharp-docs.ginbow.eu.org>。在仓库根目录用 PowerShell 执行一键发布脚本：
 
-   ```powershell
-   npm ci
-   npm run docs:build
-   ```
+```powershell
+.\eng\deploy.ps1 -Target docs
+```
 
-2. 将 `.vitepress/dist/` **目录中的内容**上传到 VPS 上静态 Web 服务器配置的站点根目录。以下示例假设服务器使用 OpenSSH，并以 `docs.example.com` 和 `/var/www/printsharp-docs/` 作为占位值；请替换为自己的主机名、账号和目录：
-
-   ```powershell
-   scp -r .vitepress/dist/* your-user@your-vps:/var/www/printsharp-docs/
-   ```
-
-   请确保服务器能读取这些文件，并且站点根目录直接包含 `index.html` 和 `assets/` 等构建内容。
-
-3. 将域名和站点根目录配置到 VPS 已安装的静态 Web 服务器。Nginx 示例：
-
-   ```nginx
-   server {
-       listen 80;
-       server_name docs.example.com;
-       root /var/www/printsharp-docs;
-       index index.html;
-
-       location / {
-           try_files $uri $uri.html $uri/ =404;
-       }
-   }
-   ```
-
-   `try_files` 规则用于匹配门户启用的无 `.html` 页面地址。公网访问时还需按自己的 VPS 环境配置 HTTPS、域名解析和防火墙；这些值不由仓库预设。
+脚本执行 `npm ci` 与正式构建，然后通过 SSH 将 `.vitepress/dist/` 上传到 VPS 的版本目录，最后切换 `/var/www/printsharp-docs/current` 并检查 HTTPS 首页。SSH 默认使用本机 `pms-vps` 主机别名；其他有 root 访问权限的主机可使用 `-HostName root@host`。详细信息见门户的[部署与运维文档](docs/operations/deployment.md)。
 
 默认 `base` 为 `/`，适用于文档站部署在域名根路径的情况。若部署在 `https://example.com/printsharp/` 这样的子路径，在本目录执行：
 

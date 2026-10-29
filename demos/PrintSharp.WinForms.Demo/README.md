@@ -18,6 +18,8 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 
 选择示例后使用“导出 Excel”“导出 PDF”或“打印（生成预览）”。右侧是 Windows 原生 PrintPreviewControl，预览页码可以切换。打印按钮只生成预览，不发送实际打印任务。修改数据或切换示例后旧预览清除，重新点击按钮即可生成。
 
+工具栏的“API 地址”默认为 `https://printsharp.ginbow.eu.org`，可改成其他 PrintSharp.Api 地址。点击“微服务生成 PDF”或“微服务生成 Excel”会将当前表格数据和内存中生成的 XLSX 模板通过 HTTPS multipart 上传到 `/api/v1/print/{format}/upload`，并将服务返回的文件保存到所选位置。该 API 当前没有身份认证；请只把演示数据发送到你信任的服务地址。
+
 | 示例 | 数据构建方式 | 默认页数 |
 | --- | --- | --- |
 | 代码生成宿泊列表 | `Document.Create` / `Report()`，默认每页 28 行 | 4 |
@@ -65,6 +67,7 @@ PrintSharp 库根据 A4 纵向高度自动分页：扣除上下各 24 点余白�
 ## 代码入口
 
 - `MainForm.cs`：表格绑定、七种示例选择、文件导出、PrintPreviewControl 和 PrintDocument 生命周期。
+- `MicroserviceDemoClient.cs`：生成微服务模板、发送 multipart 请求并接收 PDF / Excel 文件。
 - `StayRecord.cs`：100 行数据模型和展示值。
 - `ReportService.cs`：报表区域声明、POCO 与 DataSet 模板绑定、分页后小计。
 - `AutomaticPaginationReport.cs`：独立的不同明细行高自动分页示例。
