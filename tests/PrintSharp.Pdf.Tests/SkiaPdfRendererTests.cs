@@ -162,7 +162,7 @@ public sealed class SkiaPdfRendererTests
     public void CustomTextRendererReceivesScaledContentAndCanDrawToPdf()
     {
         var renderer = new RecordingTextRenderer();
-        var document = Document.Create(d => d.Page(p => p.Columns(80).Rows(40).Cell(0, 0, "Custom")));
+        var document = Document.Create(d => d.Page(p => p.Columns(80).Rows(40).Cell(0, 0, c => c.Text("Custom").Padding(0))));
         var content = GridLayoutEngine.Instance.CalculateDocument(document).Pages[0].Cells[0].ContentBounds;
         using var pdf = PdfReader.Open(document.ToPdfBytes(new PdfRenderOptions { TextRenderer = renderer, PointsPerLogicalUnit = 2 }));
         Assert.Equal(content.Width * 2, renderer.Bounds.Width);

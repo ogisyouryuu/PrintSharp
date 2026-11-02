@@ -3,6 +3,9 @@ namespace PrintSharp.Pdf;
 /// <summary>PDF 输出尺寸与字体解析选项。</summary>
 public sealed record PdfRenderOptions
 {
+    /// <summary>セルに Padding が指定されていない場合の文字内余白。論理単位で指定します。</summary>
+    public PrintSharp.Styles.PaddingSpec DefaultTextPadding { get; init; } = new(3f, 2f);
+
     /// <summary>每个 Core 逻辑尺寸单位对应的 PDF 点数。</summary>
     public float PointsPerLogicalUnit { get; init; } = 1f;
 

@@ -1,4 +1,6 @@
 using System.Data;
+using PrintSharp.Documents;
+using PrintSharp.Pdf.Preview;
 using System.IO.Compression;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -26,7 +28,11 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
     {
         _limits = options.Value;
         _slots = new(_limits.MaxConcurrency);
-        _pdfOptions = new() { TextRenderer = new NotoPdfTextRenderer(fonts ?? NotoFontRegistry.Default) };
+        _pdfOptions = new()
+        {
+            TextRenderer = new NotoPdfTextRenderer(fonts ?? NotoFontRegistry.Default),
+            DefaultTextPadding = new(_limits.TextPaddingHorizontal, _limits.TextPaddingVertical)
+        };
     }
 
     public Task<byte[]> GenerateAsync(PrintRequest request, bool pdf, CancellationToken cancellationToken) =>
@@ -39,7 +45,7 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
             return Generate(converted, template, pdf, token);
         }, cancellationToken);
 
-    private async Task<byte[]> RunAsync(Func<CancellationToken, byte[]> generate, CancellationToken cancellationToken)
+    private async Task<T> RunAsync<T>(Func<CancellationToken, T> generate, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(_limits.ProcessingTimeoutSeconds));
@@ -52,7 +58,33 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
         finally { _slots.Release(); }
     }
 
+    public Task<T> CreatePreviewAsync<T>(PrintRequest request, Func<PreviewDocument, T> materialize, CancellationToken token) =>
+        RunAsync(ct => materialize(SkiaPdfRenderer.Instance.CreatePreview(Prepare(request, true, ct), _pdfOptions, ct)), token);
+
+    public Task<T> CreatePreviewAsync<T>(byte[] template, PrintDataSet data, Func<PreviewDocument, T> materialize, CancellationToken token) =>
+        RunAsync(ct =>
+        {
+            using var converted = new PrintDataSetAdapter(_limits).Convert(data, ct);
+            return materialize(SkiaPdfRenderer.Instance.CreatePreview(Prepare(converted, template, true, ct), _pdfOptions, ct));
+        }, token);
+
     private byte[] Generate(PrintRequest request, bool pdf, CancellationToken token)
+    {
+        var document = Prepare(request, pdf, token);
+        var output = pdf ? document.ToPdfBytes(_pdfOptions) : document.ToExcelBytes();
+        token.ThrowIfCancellationRequested();
+        return output;
+    }
+
+    private byte[] Generate(DataSet data, byte[] bytes, bool pdf, CancellationToken token)
+    {
+        var document = Prepare(data, bytes, pdf, token);
+        var output = pdf ? document.ToPdfBytes(_pdfOptions) : document.ToExcelBytes();
+        token.ThrowIfCancellationRequested();
+        return output;
+    }
+
+    private Document Prepare(PrintRequest request, bool pdf, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         using var data = new PrintDataSetAdapter(_limits).Convert(request.Data, token);
@@ -62,10 +94,10 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
         byte[] bytes;
         try { bytes = Convert.FromBase64String(encoded); }
         catch (FormatException) { throw new PrintValidationException("template.contentBase64", "invalid_base64", "Template must be valid Base64."); }
-        return Generate(data, bytes, pdf, token);
+        return Prepare(data, bytes, pdf, token);
     }
 
-    private byte[] Generate(DataSet data, byte[] bytes, bool pdf, CancellationToken token)
+    private Document Prepare(DataSet data, byte[] bytes, bool pdf, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         PrintDataSetAdapter.Limit(bytes.Length, _limits.MaxTemplateBytes, "template");
@@ -139,7 +171,6 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
         prepared.Position = 0;
         var document = ExcelTemplate<DataSet>.Load(prepared).Render(bindingData);
         token.ThrowIfCancellationRequested();
-        byte[] output;
         if (pdf)
         {
             // PDF core draws values as text and does not apply Excel number formats.
@@ -153,11 +184,10 @@ public sealed class PrintGenerationService : IPrintGenerationService, IDisposabl
             formatted.SaveAs(stream);
             stream.Position = 0;
             token.ThrowIfCancellationRequested();
-            output = ExcelTemplateParser.Instance.Parse(stream).ToPdfBytes(_pdfOptions);
+            document = ExcelTemplateParser.Instance.Parse(stream);
         }
-        else output = document.ToExcelBytes();
         token.ThrowIfCancellationRequested();
-        return output;
+        return document;
     }
 
     private void ValidateArchive(byte[] bytes, CancellationToken token)

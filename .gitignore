@@ -14,3 +14,9 @@ artifacts/
 docs-site/node_modules/
 docs-site/.vitepress/cache/
 docs-site/.vitepress/dist/
+
+node_modules/
+packages/preview/dist/
+packages/preview/test-results/
+packages/preview/playwright-report/
+demos/PrintSharp.Preview.Vue/dist/

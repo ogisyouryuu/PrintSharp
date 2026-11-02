@@ -1,0 +1,41 @@
+{
+  "name": "@printsharp/preview",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Canvas display-list preview for PrintSharp",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && node scripts/copy-blazor.mjs",
+    "test": "npm run build && npm run test:fixtures && playwright test",
+    "test:fixtures": "dotnet test ../../tests/PrintSharp.Pdf.Tests --filter FullyQualifiedName~PreviewTests --verbosity quiet",
+    "demo": "npm run build && node demo/server.mjs",
+    "test:demos": "npm run build && playwright test --config playwright.demos.config.ts"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "pngjs": "^7.0.0",
+    "typescript": "^7.0.2",
+    "vue": "^3.5.44"
+  }
+}

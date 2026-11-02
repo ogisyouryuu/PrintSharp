@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/demos/">
     <Project Path="demos/PrintSharp.Multilingual.Demo/PrintSharp.Multilingual.Demo.csproj" />
+    <Project Path="demos/PrintSharp.Preview.Blazor.Demo/PrintSharp.Preview.Blazor.Demo.csproj" />
     <Project Path="demos/PrintSharp.WinForms.Demo/PrintSharp.WinForms.Demo.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -9,6 +10,7 @@
     <Project Path="src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
     <Project Path="src/PrintSharp.Api/PrintSharp.Api.csproj" />
     <Project Path="src/PrintSharp.Excel.SourceGenerator/PrintSharp.Excel.SourceGenerator.csproj" />
+    <Project Path="src/PrintSharp.Preview.Blazor/PrintSharp.Preview.Blazor.csproj" />
     <Project Path="src/PrintSharp.Windows/PrintSharp.Windows.csproj" />
   </Folder>
   <Folder Name="/tests/">
@@ -61,6 +63,7 @@
   </Folder>
   <Folder Name="/Documentation/Guides/">
     <File Path="doc/nuget-release.zh-CN.md" />
+    <File Path="doc/canvas-preview.zh-CN.md" />
     <File Path="doc/multilingual-pdf-validation.md" />
     <File Path="doc/pdf-backend-migration.md" />
     <File Path="src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md" />

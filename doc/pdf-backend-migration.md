@@ -66,3 +66,7 @@ Rocky 安装 `fontconfig libicu openssl-libs`，保留完整发布内容，包�
 Skia 内部的页面设备使用整数坐标，当前将内部精度设为 0.01 PDF 点，避免默认整点取整改变用纸尺寸。此设置不将文字或边框变成位图；当前渲染器不使用会生成高分辨率中间图像的滤镜，自定义文字渲染器也应避免使用此类滤镜。超出原生坐标范围的页面会报错。
 
 生成文件不保证与旧版逐字节一致。类库中原先使用系统字体 / 基础文字绘制的调用现统一采用 Noto / HarfBuzz，因此字形和换行可能变化；API 原有多语言排版链路继续沿用。复杂文本的复制与提取不保证逐字还原，CJK 日文字形习惯、固定行高、字体覆盖及 ARM64 尚未验证等限制继续适用。结果样例和完整环境记录见 `multilingual-pdf-validation.md`。
+
+## Canvas 共享绘制计划追加说明（2026-11-02）
+
+默认 Noto 路径现通过 `PreviewDocument` 共享字形位置与图形命令，PDF 继续输出矢量文字。新增 `SkiaPdfRenderer.CreatePreview` 和 `IDisplayListTextRenderer`；现有仅实现 `IPdfTextRenderer` 的自定义实现仍可生成 PDF，但不自动支持预览。金额/日期准备流程在 API 内共用。以上旧验证记录属于此前迁移，本次验证范围见 [Canvas Preview 指南](canvas-preview.zh-CN.md)。

@@ -9,7 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOptions<PrintApiOptions>().BindConfiguration("PrintApi").Validate(o => o.IsValid(), "Limits must be positive.").ValidateOnStart();
 builder.WebHost.ConfigureKestrel((context, options) => options.Limits.MaxRequestBodySize =
     context.Configuration.GetValue<long?>("PrintApi:MaxRequestBytes") ?? new PrintApiOptions().MaxRequestBytes);
-builder.Services.AddSingleton<IPrintGenerationService, PrintGenerationService>();
+builder.Services.AddSingleton<PrintGenerationService>();
+builder.Services.AddSingleton<IPrintGenerationService>(sp => sp.GetRequiredService<PrintGenerationService>());
+builder.Services.AddSingleton<PreviewStore>();
 builder.Services.AddSingleton(NotoFontRegistry.Default);
 var app = builder.Build();
 
@@ -98,5 +100,6 @@ IResult GeneratedFile(HttpContext context, PrintDataSet data, byte[] output, boo
         pdf ? "pdf" : "xlsx", data.Tables.Count, data.Tables.Sum(t => (long)t.Rows.Count));
     return Results.File(output, pdf ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", pdf ? "document.pdf" : "document.xlsx");
 }
+app.MapPreviewEndpoints();
 app.Run();
 public partial class Program;

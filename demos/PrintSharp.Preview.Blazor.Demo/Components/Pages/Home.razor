@@ -1,0 +1,67 @@
+@page "/"
+@inject IHttpClientFactory Clients
+
+<PageTitle>PrintSharp Blazor Demo</PageTitle>
+<main>
+    <header><span class="badge">BLAZOR · INTERACTIVE SERVER</span><h1>PrintSharp 预览验收</h1><p>Razor 组件接入同一 TypeScript 控件，翻页和缩放在浏览器执行。</p></header>
+    <section class="inputs">
+        <label>自定义 Excel 模板 <InputFile OnChange="SelectFile" accept=".xlsx" /></label>
+        <label for="data">数据 JSON</label><textarea id="data" @bind="_data" spellcheck="false"></textarea>
+        <div class="actions">
+            <button disabled="@(_busy || !_interactive)" @onclick="() => Create(true)">使用内置两页示例</button>
+            <button disabled="@(_busy || !_interactive || _file is null)" @onclick="() => Create(false)">上传并预览</button>
+            <a href="template.xlsx" download>下载示例模板</a>
+            @if (_documentId is not null) { <a href="@($"/api/v1/previews/{_documentId}/pdf")" download>下载同一快照 PDF</a> }
+        </div>
+    </section>
+    @if (_error is not null) { <p role="alert" class="error">@_error</p> }
+    @if (_documentId is not null)
+    {
+        <p class="summary" data-testid="summary">@_pageCount 页 · 当前第 @_page 页 · @(_loaded ? "绘制完成" : "加载中")</p>
+        <PrintSharpPreview DocumentId="@_documentId" Height="600px" PageChanged="PageChanged" Error="message => _error = message" />
+    }
+    else { <section class="empty">点击“使用内置两页示例”即可验收，无需准备文件。</section> }
+</main>
+
+@code {
+    private IBrowserFile? _file;
+    private string _data = "{\"tables\":[{\"name\":\"T\",\"columns\":[{\"name\":\"Value\",\"type\":\"string\"}],\"rows\":[{\"Value\":\"中文 日本語 한국어 العربية مرحبًا / Hello PrintSharp\"}]}]}";
+    private string? _documentId;
+    private string? _error;
+    private bool _busy;
+    private bool _interactive;
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender) { _interactive = true; StateHasChanged(); }
+    }
+    private bool _loaded;
+    private int _page = 1;
+    private int _pageCount;
+    private void SelectFile(InputFileChangeEventArgs args) => _file = args.File;
+    private void PageChanged(int page) { _page = page; _loaded = true; }
+    private async Task Create(bool sample)
+    {
+        _busy = true; _error = null;
+        try
+        {
+            using var data = JsonDocument.Parse(_data);
+            using var body = new MultipartFormDataContent();
+            await using var template = sample
+                ? File.OpenRead(Path.Combine(AppContext.BaseDirectory, "wwwroot", "template.xlsx"))
+                : _file!.OpenReadStream(5 * 1024 * 1024);
+            body.Add(new StreamContent(template), "template", "template.xlsx");
+            body.Add(new StringContent(_data, Encoding.UTF8, "application/json"), "data");
+            var client = Clients.CreateClient("PrintApi");
+            using var response = await client.PostAsync("/api/v1/previews/upload", body);
+            var manifest = await response.Content.ReadFromJsonAsync<JsonElement>();
+            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(manifest.TryGetProperty("detail", out var detail) ? detail.GetString() : response.StatusCode.ToString());
+            var old = _documentId;
+            _documentId = manifest.GetProperty("documentId").GetString();
+            _pageCount = manifest.GetProperty("pageCount").GetInt32();
+            _page = 1; _loaded = false;
+            if (old is not null) { using var deleted = await client.DeleteAsync($"/api/v1/previews/{old}"); }
+        }
+        catch (Exception exception) { _error = exception.Message; }
+        finally { _busy = false; }
+    }
+}

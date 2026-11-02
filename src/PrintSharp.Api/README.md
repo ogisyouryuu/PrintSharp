@@ -71,6 +71,23 @@ Nginx 已限制 API 请求速率和请求体大小。API 暂无内置身份认�
 
 新增文字链路采用 RichTextKit 0.4.167（Apache-2.0）、SkiaSharp / HarfBuzzSharp（MIT，原生组件另附第三方声明）、HarfBuzz（Old MIT）、Noto（SIL OFL 1.1）。这些许可允许免费商业和闭源使用，但分发时仍需保留相应版权、许可及第三方声明；OFL 不要求嵌入字体的报表使用 OFL。发布目录保留 `Fonts/OFL-*.txt` 和 `Licenses/`。详见其中的来源清单与原始许可文本。
 
+## Canvas 预览 API
+
+新增预览会话接口，先提交一次模板与数据，再按物理页读取 JSON Display List。PDF 和 Canvas 共用后端字形位置及绘制计划，前端不重新排版文字。完整协议、TypeScript / Vue / Blazor 接入、运行演示和限制见 [Canvas Preview 指南](../../doc/canvas-preview.zh-CN.md)。
+
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| POST | `/api/v1/previews` | 与现有 PDF 相同的 Base64 JSON 输入，201 返回 manifest |
+| POST | `/api/v1/previews/upload` | 同样的 template / data multipart 输入 |
+| GET | `/api/v1/previews/{id}` | 版本、过期时间、物理页数和尺寸 |
+| GET | `/api/v1/previews/{id}/pages/{pageNumber}` | 1 基页号，返回页面命令及该页去重资源 |
+| GET | `/api/v1/previews/{id}/pdf` | 下载同一快照 PDF |
+| DELETE | `/api/v1/previews/{id}` | 释放快照，返回 204 |
+
+默认缓存期限 900 秒、32 个会话、单文档 32 MiB、总缓存 128 MiB，配置位于 appsettings.json 的 PrintApi 节。manifest / page 支持 ETag 和 304。缓存满返回 503；过期或不存在返回 404 / 410。创建阶段生成整份快照；页面响应内嵌资源，不提供单独的资源端点。缓存为单进程内存，多实例部署需会话粘滞。缓存字节上限不等于进程峰值内存上限。
+
+服务仍不自带认证；若宿主提供已认证用户，快照按用户身份隔离。匿名部署的随机会话 ID 是读取凭据。下载请使用会话的 /pdf 地址，重新调用原 /print/pdf 会创建一次独立输出。
+
 ## 路由与请求
 
 | 方法 | 路径 | 返回 |
@@ -322,3 +339,7 @@ dotnet run --project tests/PrintSharp.Excel.AotSmoke
 ```
 
 API 单元测试和 WebApplicationFactory HTTP 集成测试位于 `tests/PrintSharp.Api.Tests`，模板在测试中生成，不包含个人信息。
+
+### PDF / Canvas 文字内边距
+
+`PrintApi:TextPaddingHorizontal` 默认 3，`TextPaddingVertical` 默认 2（逻辑单位）。文字会离开左右/上下边框，PDF 与 Canvas 共用这一排版设置。设为 0 可恢复旧版贴边行为；环境变量分别为 `PrintApi__TextPaddingHorizontal`、`PrintApi__TextPaddingVertical`。设置修改后重启服务并重新创建预览，已有快照不会改变。详见 [Padding 接入说明](../../doc/canvas-preview.zh-CN.md#文字内边距padding)。

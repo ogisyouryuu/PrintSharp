@@ -21,6 +21,8 @@
 
 HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
+Canvas 预览：[TypeScript / Vue / Blazor 接入指南](doc/canvas-preview.zh-CN.md)。新增预览 API 按页返回 JSON Display List，并从同一快照下载 PDF；支持翻页、缩放和适配页面。[运行浏览器演示](packages/preview/README.md)。
+
 ## 为什么是 PrintSharp？
 
 传统报表系统常先用绝对坐标布局，再尝试转换为 Excel。微小的坐标差异就可能额外生成 Excel 列，导致原有布局崩坏。

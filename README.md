@@ -21,6 +21,8 @@ Create one Excel-like grid document, then render it consistently to **Excel**, *
 
 HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
 
+Canvas preview: [TypeScript / Vue / Blazor integration guide](doc/canvas-preview.zh-CN.md). The new preview API returns per-page JSON display lists and a PDF from the same frozen rendering plan. Run the [browser demo](packages/preview/README.md) locally.
+
 ## Why PrintSharp?
 
 Traditional reporting systems often start with absolute coordinates and try to convert them to Excel later. Small coordinate differences can create extra Excel columns and break the intended layout.

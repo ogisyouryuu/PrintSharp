@@ -25,7 +25,7 @@ public sealed class TypographyTests
         Assert.True(justifiedLines.Length > 2);
         Assert.Equal(leftLines.Length, justifiedLines.Length);
         Assert.True(justifiedLines[0] > leftLines[0] + 1);
-        Assert.InRange(Math.Abs(justifiedLines[0] - content.Right), 0, 1);
+        Assert.InRange(Math.Abs(justifiedLines[0] - (content.Right - PdfRenderOptions.Default.DefaultTextPadding.Right)), 0, 1);
         Assert.Equal(leftLines[^1], justifiedLines[^1], 2);
         Assert.Equal(leftLines[^2], justifiedLines[^2], 2);
     }

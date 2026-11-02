@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrintSharp Preview</title>
+<style>body{font:15px system-ui;margin:24px;color:#172033}form{display:grid;gap:12px;max-width:800px}textarea{height:110px;font:14px monospace}button{padding:8px 16px}#preview{height:70vh;margin-top:20px}#status{white-space:pre-wrap}</style></head>
+<body>
+<h1>PrintSharp Canvas Preview</h1>
+<form id="form">
+  <label>Excel 模板 <input id="template" type="file" accept=".xlsx" required></label>
+  <label for="data">数据 JSON（与现有 API 的 data 对象相同）</label>
+  <textarea id="data">{"tables":[{"name":"T","columns":[{"name":"Value","type":"string"}],"rows":[{"Value":"中文 日本語 العربية Hello"}]}]}</textarea>
+  <div><button id="create" type="submit">创建预览</button> <a id="pdf" hidden>下载同一快照 PDF</a></div>
+</form>
+<p>示例模板可在 A1 填入 {{T.Value}}，配置足够的列宽和行高。</p>
+<div id="status" role="status"></div><div id="preview"></div>
+<script type="module">
+import { createPrintPreview, createHttpPreviewSource } from '/preview.js';
+let preview, id;
+const status = document.querySelector('#status');
+document.querySelector('#form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = document.querySelector('#create'); button.disabled = true;
+  try {
+    const data = JSON.parse(document.querySelector('#data').value);
+    const body = new FormData(); body.append('template', document.querySelector('#template').files[0]); body.append('data', JSON.stringify(data));
+    status.textContent = '正在生成文档快照…';
+    const response = await fetch('/api/v1/previews/upload', { method: 'POST', body });
+    const manifest = await response.json();
+    if (!response.ok) throw new Error(manifest.detail ?? `HTTP ${response.status}`);
+    preview?.destroy();
+    if (id) void fetch(`/api/v1/previews/${id}`, { method: 'DELETE' });
+    id = manifest.documentId;
+    preview = createPrintPreview(document.querySelector('#preview'), { source: createHttpPreviewSource({ baseUrl: '/api/v1/previews', documentId: id }) });
+    await preview.ready;
+    const pdf = document.querySelector('#pdf'); pdf.href = `/api/v1/previews/${id}/pdf`; pdf.hidden = false;
+    status.textContent = `${manifest.pageCount} 页 · 快照有效至 ${new Date(manifest.expiresAt).toLocaleString()}`;
+  } catch (error) { status.textContent = String(error); }
+  finally { button.disabled = false; }
+});
+</script>
+</body></html>

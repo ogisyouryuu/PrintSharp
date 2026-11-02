@@ -21,6 +21,8 @@
 
 HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
+Canvas プレビュー：[TypeScript / Vue / Blazor 接続ガイド](doc/canvas-preview.zh-CN.md)。ページごとの JSON Display List と同じ描画計画から生成する PDF に対応します。[ブラウザーデモ](packages/preview/README.md)でページ移動と拡大縮小を確認できます。
+
 ## PrintSharp を使う理由
 
 従来の帳票システムは、絶対座標でレイアウトしてから Excel に変換することが少なくありません。わずかな座標差でも余分な Excel 列が作られ、意図したレイアウトが崩れることがあります。

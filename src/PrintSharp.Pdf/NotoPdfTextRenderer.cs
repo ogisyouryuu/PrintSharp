@@ -1,4 +1,5 @@
 using PrintSharp.Layout;
+using PrintSharp.Pdf.Preview;
 using PrintSharp.Styles;
 using SkiaSharp;
 using Topten.RichTextKit;
@@ -7,10 +8,19 @@ using Topten.RichTextKit.Utils;
 namespace PrintSharp.Pdf;
 
 /// <summary>同梱 Noto フォントと HarfBuzz を使用してセル内に多言語を描画します。</summary>
-public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IPdfTextRenderer
+public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTextRenderer
 {
     /// <inheritdoc/>
     public void DrawText(SKCanvas canvas, string text, CellStyle style, LayoutRect content, float scale)
+    {
+        var builder = new DisplayListBuilder(new(), new());
+        AppendText(builder, text, style, content, scale);
+        var page = new DisplayPage(1, content.Right, content.Bottom, builder.Commands.AsReadOnly());
+        new PreviewDocument([page], builder.Resources, SKDocumentPdfMetadata.Default).DrawPage(canvas, page);
+    }
+
+    /// <inheritdoc/>
+    public void AppendText(DisplayListBuilder builder, string text, CellStyle style, LayoutRect content, float scale)
     {
         var font = style.Font ?? FontSpec.Default;
         var color = style.ForeColor ?? ColorSpec.Black;
@@ -46,16 +56,32 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IPdfTextRender
         };
         if (style.WrapText && style.HorizontalAlignment == HorizontalAlignment.Justify)
             JustifyLines(block, content.Width);
-        canvas.Save();
-        try
+        builder.Add(new("save"));
+        builder.Add(new("clipRect") { Values = [content.X, content.Y, content.Width, content.Height] });
+        foreach (var run in block.FontRuns.Where(r => r.RunKind != FontRunKind.TrailingWhitespace && r.Glyphs.Length > 0))
         {
-            // 固定行高の帳票では隣接セルへのはみ出しを防止します。
-            canvas.ClipRect(new SKRect(content.X, content.Y, content.Right, content.Bottom));
-            canvas.Translate(content.X, content.Y + Math.Max(0, offset));
-            if (font.Italic) PaintItalic(canvas, block);
-            else block.Paint(canvas);
+            var positions = run.GlyphPositions.ToArray();
+            for (int i = 0; i < positions.Length; i++)
+                positions[i] = new(positions[i].X + content.X, positions[i].Y + content.Y + Math.Max(0, offset));
+            builder.DrawGlyphRun(run.Typeface, run.Style.FontSize, font.Italic ? -0.2f : 0,
+                run.Glyphs.ToArray(), positions, run.Style.TextColor);
+            using var skFont = new SKFont(run.Typeface, run.Style.FontSize);
+            float baseline = content.Y + Math.Max(0, offset) + run.Line.YCoord + run.Line.BaseLine;
+            using var paint = new SKPaint { Color = run.Style.TextColor };
+            if (run.Style.Underline != UnderlineStyle.None)
+            {
+                paint.StrokeWidth = Math.Max(1, skFont.Metrics.UnderlineThickness ?? 1);
+                float y = baseline + Math.Max(1, skFont.Metrics.UnderlinePosition ?? 1);
+                builder.DrawLine(content.X + run.XCoord, y, content.X + run.XCoord + run.Width, y, paint);
+            }
+            if (run.Style.StrikeThrough != StrikeThroughStyle.None)
+            {
+                paint.StrokeWidth = Math.Max(1, skFont.Metrics.StrikeoutThickness ?? 1);
+                float y = baseline + (skFont.Metrics.StrikeoutPosition ?? -run.Style.FontSize * 0.3f);
+                builder.DrawLine(content.X + run.XCoord, y, content.X + run.XCoord + run.Width, y, paint);
+            }
         }
-        finally { canvas.Restore(); }
+        builder.Add(new("restore"));
     }
 
     private static void JustifyLines(TextBlock block, float width)
@@ -89,32 +115,4 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IPdfTextRender
         }
     }
 
-    private static void PaintItalic(SKCanvas canvas, TextBlock block)
-    {
-        foreach (var run in block.FontRuns.Where(r => r.RunKind != FontRunKind.TrailingWhitespace && r.Glyphs.Length > 0))
-        {
-            // 正体フォントのグリフ自体を傾け、複数行の座標やアラビア語の組版位置を維持します。
-            using var font = new SKFont(run.Typeface, run.Style.FontSize) { SkewX = -0.2f, Subpixel = true, Edging = SKFontEdging.Antialias };
-            using var builder = new SKTextBlobBuilder();
-            var buffer = builder.AllocatePositionedRun(font, run.Glyphs.Length);
-            buffer.SetGlyphs(run.Glyphs.AsSpan());
-            buffer.SetPositions(run.GlyphPositions.AsSpan());
-            using var blob = builder.Build();
-            using var paint = new SKPaint { Color = run.Style.TextColor, IsAntialias = true };
-            canvas.DrawText(blob, 0, 0, paint);
-            float baseline = run.Line.YCoord + run.Line.BaseLine;
-            if (run.Style.Underline != UnderlineStyle.None)
-            {
-                paint.StrokeWidth = Math.Max(1, font.Metrics.UnderlineThickness ?? 1);
-                float y = baseline + Math.Max(1, font.Metrics.UnderlinePosition ?? 1);
-                canvas.DrawLine(run.XCoord, y, run.XCoord + run.Width, y, paint);
-            }
-            if (run.Style.StrikeThrough != StrikeThroughStyle.None)
-            {
-                paint.StrokeWidth = Math.Max(1, font.Metrics.StrikeoutThickness ?? 1);
-                float y = baseline + (font.Metrics.StrikeoutPosition ?? -run.Style.FontSize * 0.3f);
-                canvas.DrawLine(run.XCoord, y, run.XCoord + run.Width, y, paint);
-            }
-        }
-    }
 }
