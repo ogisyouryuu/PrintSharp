@@ -23,6 +23,28 @@ HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) �
 
 Canvas プレビュー：[TypeScript / Vue / Blazor 接続ガイド](doc/canvas-preview.zh-CN.md)。ページごとの JSON Display List と同じ描画計画から生成する PDF に対応します。[ブラウザーデモ](packages/preview/README.md)でページ移動と拡大縮小を確認できます。
 
+## TypeScript・Vue・Blazor のプレビュー
+
+PDF と Canvas は、物理改ページ、折り返し、余白、字形位置を含む不変の描画計画を共有します。Canvas は文字を再組版せず、配置済みの字形輪郭を再生します。アンチエイリアスには差が生じる場合があります。
+
+- **連続スクロール：** 単一ページと連続表示を切り替えられます。表示ページと隣接ページだけを仮想化し、ページキャッシュと画布のピクセル数を制限します。拡大縮小時は閲覧位置と描画済みの画面を維持します。
+- **サムネイル：** オプションの仮想化サイドバーでページ移動と現在ページの強調表示ができます。読み込みと描画では本文を優先します。
+- **検索：** 必要時に `/text` 索引を取得し、大文字小文字を区別しないリテラル検索、件数表示、前後の結果への移動、文字矩形のハイライトに対応します。検索語は UTF-16 コード単位で 256、結果は 1,000 件が上限です。
+- **選択とコピー：** ドラッグして Ctrl+C / Command+C またはコピーボタンを使うと、多言語の論理順で原文をコピーできます。マウスの始点と終点は実際の文字矩形から求めます。デモの選択状態欄は高さを固定し、ドラッグ中に用紙が動かないようにしています。
+
+プレビュー用 npm パッケージと Blazor RCL はソースから利用でき、npm / NuGet には未公開です。Vue は `@printsharp/preview/vue`、Blazor は `src/PrintSharp.Preview.Blazor` を参照します。メソッド、双方向バインディング、イベント、配置ファイルは[接続ガイド（中国語）](doc/canvas-preview.zh-CN.md)と[パッケージ README](packages/preview/README.md)を参照してください。
+
+API をポート 5080 で起動し、別のターミナルでデモを実行します。
+
+| デモ | 起動・確認手順 | 既定の URL |
+| --- | --- | --- |
+| Vue 3 + TypeScript | [Vue デモ](demos/PrintSharp.Preview.Vue/README.md) | http://127.0.0.1:5199 |
+| Blazor Interactive Server | [Blazor デモ](demos/PrintSharp.Preview.Blazor.Demo/README.md) | http://127.0.0.1:5200 |
+
+両デモには 2 ページのサンプル、Excel アップロード、JSON 編集、同一スナップショットの PDF ダウンロードが含まれます。依存関係と Chromium を導入後、`npm --prefix packages/preview test` でコントロールを検証し、`npm --prefix packages/preview run test:demos` で実際の API と両デモを検証します。マウスのドラッグとクリップボード内容も確認します。既存サーバーの再利用や Blazor のポート変更は各デモの README を参照してください。
+
+選択対象は現在読み込まれているページに限られ、仮想化でページを解放すると選択が消える場合があります。文書全体を対象とした永続的な選択には未対応です。完全にクリップされた原文も検索できますが、表示可能な文字ハイライトや選択矩形はありません。コピーボタンには HTTPS/localhost とブラウザーのクリップボード許可が必要です。デスクトップ Chromium を検証済みで、タッチ選択、Firefox/WebKit、完全な意味構造のアクセシビリティは未検証です。サーバーのスナップショットは現在、単一プロセスのメモリに保存します。
+
 ## PrintSharp を使う理由
 
 従来の帳票システムは、絶対座標でレイアウトしてから Excel に変換することが少なくありません。わずかな座標差でも余分な Excel 列が作られ、意図したレイアウトが崩れることがあります。

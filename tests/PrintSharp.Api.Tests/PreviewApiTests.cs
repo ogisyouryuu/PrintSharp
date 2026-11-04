@@ -57,11 +57,29 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
         Assert.Equal(HttpStatusCode.NotModified, (await _client.SendAsync(conditional)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync(url + "/pages/0")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync(url + "/pages/2")).StatusCode);
+        var textResponse = await _client.GetAsync(url + "/text");
+        textResponse.EnsureSuccessStatusCode();
+        var textIndex = await textResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(manifest.GetProperty("revision").GetString(), textIndex.GetProperty("revision").GetString());
+        var region = Assert.Single(textIndex.GetProperty("pages")[0].GetProperty("regions").EnumerateArray());
+        Assert.Equal("1,234.50", region.GetProperty("text").GetString());
+        Assert.NotEmpty(region.GetProperty("boxes").EnumerateArray());
+        Assert.Equal(page.GetProperty("page").GetProperty("textRegions")[0].GetRawText(), region.GetRawText());
+        var clip = page.GetProperty("page").GetProperty("commands").EnumerateArray().Single(c => c.GetProperty("op").GetString() == "clipRect").GetProperty("values");
+        Assert.Equal(clip[0].GetSingle(), region.GetProperty("x").GetSingle());
+        Assert.Equal(clip[1].GetSingle(), region.GetProperty("y").GetSingle());
+        Assert.Equal(clip[2].GetSingle(), region.GetProperty("width").GetSingle());
+        Assert.Equal(clip[3].GetSingle(), region.GetProperty("height").GetSingle());
+        Assert.False(textIndex.TryGetProperty("resources", out _));
+        using var textConditional = new HttpRequestMessage(HttpMethod.Get, url + "/text");
+        textConditional.Headers.IfNoneMatch.Add(textResponse.Headers.ETag!);
+        Assert.Equal(HttpStatusCode.NotModified, (await _client.SendAsync(textConditional)).StatusCode);
         var pdf = await _client.GetByteArrayAsync(url + "/pdf");
         using var parsed = UglyToad.PdfPig.PdfDocument.Open(pdf);
         Assert.Contains("1,234.50", parsed.GetPage(1).Text);
         Assert.Equal(HttpStatusCode.NoContent, (await _client.DeleteAsync(url)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync(url)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync(url + "/text")).StatusCode);
     }
 
     [Fact]
@@ -95,6 +113,7 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
         var alice = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "alice")], "test"));
         var bob = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "bob")], "test"));
         var entry = store.Add(document, alice, default);
+        Assert.Equal(entry.Manifest.Length + entry.Pdf.Length + entry.Pages.Sum(p => p.Length) + entry.TextIndex.Length, entry.Size);
         Assert.Equal(404, Assert.Throws<PrintValidationException>(() => store.Get(entry.Id, bob)).Status);
         Assert.Equal(503, Assert.Throws<PrintValidationException>(() => store.Add(document, alice, default)).Status);
         store.Delete(entry.Id, alice);

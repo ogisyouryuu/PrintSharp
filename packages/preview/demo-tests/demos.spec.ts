@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-for (const [name, port] of [['vue', 5199], ['blazor', 5200]] as const) {
-  test(`${name}: real upload, two-page preview, zoom, PDF download, and document replacement`, async ({ page }) => {
+for (const [name, port] of [['vue', 5199], ['blazor', Number(process.env.PREVIEW_TEST_BLAZOR_PORT ?? 5200)]] as const) {
+  test(`${name}: real upload, two-page preview, zoom, PDF download, and document replacement`, async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`http://127.0.0.1:${port}`);
@@ -39,6 +40,78 @@ for (const [name, port] of [['vue', 5199], ['blazor', 5200]] as const) {
     await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Page 1 / 2');
     await expect(page.locator('canvas')).toBeVisible();
     await expect(page.getByTestId('summary')).toContainText('绘制完成');
+    await page.getByRole('button', { name: '连续滚动', exact: true }).click();
+    await expect(page.getByTestId('summary')).toContainText('连续滚动');
+    await expect(page.locator('[data-page="1"] canvas')).toBeVisible();
+    await page.locator('.viewport').evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await expect(page.getByTestId('summary')).toContainText('当前第 2 页');
+    await expect(page.locator('[data-page="2"] canvas')).toBeVisible();
+    await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-continuous.png`, import.meta.url)), fullPage: true });
+    await page.getByRole('button', { name: '单页', exact: true }).click();
+    await expect(page.locator('canvas')).toHaveCount(1);
+    await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Page 2 / 2');
+    await page.getByRole('button', { name: '缩略图', exact: true }).click();
+    await expect(page.getByTestId('summary')).toContainText('缩略图已打开');
+    await expect(page.locator('[data-thumbnail-page="1"] canvas')).toBeVisible();
+    await page.locator('[data-thumbnail-page="1"]').click();
+    await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', 'Page 1 / 2');
+    await expect(page.locator('[data-thumbnail-page="1"]')).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('button', { name: '连续滚动', exact: true }).click();
+    await page.locator('[data-thumbnail-page="2"]').click();
+    await expect(page.getByTestId('summary')).toContainText('当前第 2 页');
+    await expect(page.locator('[data-thumbnail-page="2"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('[data-page="2"] canvas')).toBeVisible();
+    await page.getByRole('button', { name: '整页', exact: true }).click();
+    await expect.poll(() => page.locator('[data-page="2"]').evaluate(element => element.getBoundingClientRect().height)).toBeLessThan(600);
+    await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-thumbnails.png`, import.meta.url)), fullPage: true });
+    await page.getByRole('button', { name: '缩略图', exact: true }).click();
+    await expect(page.locator('[data-thumbnail-page]')).toHaveCount(0);
+    await expect(page.getByTestId('summary')).toContainText('缩略图已关闭');
+    await page.getByRole('button', { name: '搜索', exact: true }).click();
+    await page.getByRole('searchbox', { name: '搜索关键词' }).fill('Updated');
+    await expect(page.locator('.search-status')).toHaveText('1 / 2');
+    await expect(page.getByTestId('search-summary')).toContainText('1 / 2');
+    await expect(page.locator('.search-hit-current').first()).toBeVisible();
+    await page.getByRole('button', { name: '下一处', exact: true }).click();
+    await expect(page.getByTestId('search-summary')).toContainText('2 / 2');
+    await expect(page.getByTestId('summary')).toContainText('当前第 2 页');
+    await page.getByRole('button', { name: '单页', exact: true }).click();
+    await expect(page.locator('.search-hit-current').first()).toBeVisible();
+    await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-search.png`, import.meta.url)), fullPage: true });
+    await page.getByRole('button', { name: '关闭搜索', exact: true }).click();
+    await expect(page.locator('.search-overlay')).toHaveCount(0);
+    const region = page.locator('.text-region').filter({ hasText: 'Updated' }).first();
+    // 検索欄を閉じた後の ResizeObserver による再描画を待ちます。
+    await page.waitForTimeout(200);
+    await region.scrollIntoViewIfNeeded();
+    const clusters = region.locator('.text-cluster');
+    const start = (await clusters.nth(0).boundingBox())!;
+    const middle = (await clusters.nth(2).boundingBox())!;
+    const end = (await clusters.nth(6).boundingBox())!;
+    const regionBefore = (await region.boundingBox())!;
+    await page.mouse.move(start.x + .2, start.y + start.height / 2); await page.mouse.down();
+    await page.mouse.move(middle.x + middle.width - .2, middle.y + middle.height / 2, { steps: 4 });
+    await expect(page.getByTestId('selection-summary')).toContainText('已选择：U');
+    expect((await region.boundingBox())!.y).toBeCloseTo(regionBefore.y, 1);
+    await page.mouse.move(end.x + end.width - .2, end.y + end.height / 2, { steps: 12 }); await page.mouse.up();
+    await expect(page.getByTestId('selection-summary')).toHaveText('已选择：Updated');
+    expect((await region.boundingBox())!.y).toBeCloseTo(regionBefore.y, 1);
+    await page.keyboard.press('Control+c');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Updated');
+    await region.evaluate(element => {
+      const spans = element.querySelectorAll('.text-cluster');
+      const range = document.createRange(); range.setStart(spans[0].firstChild!, 0); range.setEnd(spans[spans.length - 1].firstChild!, spans[spans.length - 1].textContent!.length);
+      const selection = (element.getRootNode() as any).getSelection(); selection.removeAllRanges(); selection.addRange(range);
+    });
+    await expect(page.getByTestId('selection-summary')).toContainText('Updated / 更新 / العربية');
+    await page.getByRole('button', { name: '复制', exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Updated / 更新 / العربية');
+    await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-selection.png`, import.meta.url)), fullPage: true });
+    await page.getByRole('button', { name: '文字选择', exact: true }).click();
+    await expect(page.locator('.text-layer')).toBeHidden();
+    await expect(page.getByTestId('selection-summary')).toHaveText('未选择文字');
+    await page.getByRole('button', { name: '文字选择', exact: true }).click();
+    await expect(page.locator('.text-layer')).toBeVisible();
     expect(errors).toEqual([]);
   });
 }

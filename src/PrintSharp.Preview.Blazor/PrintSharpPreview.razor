@@ -10,7 +10,18 @@
     [Parameter, EditorRequired] public string DocumentId { get; set; } = "";
     [Parameter] public string BaseUrl { get; set; } = "/api/v1/previews";
     [Parameter] public int InitialPage { get; set; } = 1;
+    [Parameter] public string ViewMode { get; set; } = "single-page";
+    private string? _loadedMode;
+    private bool _loadedThumbnails;
+    private bool _loadedTextSelection;
+    [Parameter] public bool TextSelection { get; set; } = true;
+    [Parameter] public EventCallback<bool> TextSelectionChanged { get; set; }
+    [Parameter] public EventCallback<string> SelectionChanged { get; set; }
+    [Parameter] public bool Thumbnails { get; set; }
+    [Parameter] public EventCallback<bool> ThumbnailsChanged { get; set; }
     [Parameter] public string Height { get; set; } = "600px";
+    [Parameter] public EventCallback<string> ViewModeChanged { get; set; }
+    [Parameter] public EventCallback<PreviewSearchState> SearchChanged { get; set; }
     [Parameter] public EventCallback<int> PageChanged { get; set; }
     [Parameter] public EventCallback<string> Error { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
@@ -23,7 +34,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_disposed || string.IsNullOrWhiteSpace(DocumentId) || _loaded == (BaseUrl, DocumentId, InitialPage)) return;
+        if (_disposed || string.IsNullOrWhiteSpace(DocumentId)) return;
+        if (_loaded == (BaseUrl, DocumentId, InitialPage))
+        {
+            if (_preview is not null && _loadedMode != ViewMode) { await _preview.InvokeVoidAsync("setViewMode", ViewMode); _loadedMode = ViewMode; }
+            if (_preview is not null && _loadedThumbnails != Thumbnails) { await _preview.InvokeVoidAsync("setThumbnailsVisible", Thumbnails); _loadedThumbnails = Thumbnails; }
+            if (_preview is not null && _loadedTextSelection != TextSelection) { await _preview.InvokeVoidAsync("setTextSelection", TextSelection); _loadedTextSelection = TextSelection; }
+            return;
+        }
         _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./_content/PrintSharp.Preview.Blazor/preview.js");
         if (_disposed) { await _module.DisposeAsync(); return; }
         if (_preview is not null)
@@ -32,12 +50,28 @@
             await _preview.DisposeAsync();
         }
         _callback ??= DotNetObjectReference.Create(this);
-        _preview = await _module.InvokeAsync<IJSObjectReference>("mountBlazor", _container, BaseUrl, DocumentId, InitialPage, "fit-width", _callback);
+        _preview = await _module.InvokeAsync<IJSObjectReference>("mountBlazor", _container, BaseUrl, DocumentId, InitialPage, "fit-width", _callback, ViewMode, Thumbnails, TextSelection);
+        _loadedTextSelection = TextSelection;
+        _loadedThumbnails = Thumbnails;
+        _loadedMode = ViewMode;
         _loaded = (BaseUrl, DocumentId, InitialPage);
     }
 
+    [JSInvokable] public Task OnThumbnailsChanged(bool visible) => ThumbnailsChanged.InvokeAsync(visible);
+    [JSInvokable] public Task OnViewModeChanged(string mode) => ViewModeChanged.InvokeAsync(mode);
+    [JSInvokable] public Task OnSelectionChanged(string text) => SelectionChanged.InvokeAsync(text);
+    [JSInvokable] public Task OnTextSelectionChanged(bool enabled) => TextSelectionChanged.InvokeAsync(enabled);
+    public ValueTask SetTextSelectionAsync(bool enabled) => _preview?.InvokeVoidAsync("setTextSelection", enabled) ?? ValueTask.CompletedTask;
+    public ValueTask ClearSelectionAsync() => _preview?.InvokeVoidAsync("clearSelection") ?? ValueTask.CompletedTask;
+    [JSInvokable] public Task OnSearchChanged(PreviewSearchState state) => SearchChanged.InvokeAsync(state);
+    public ValueTask SearchAsync(string query) => _preview?.InvokeVoidAsync("search", query) ?? ValueTask.CompletedTask;
+    public ValueTask NextSearchResultAsync() => _preview?.InvokeVoidAsync("nextSearchResult") ?? ValueTask.CompletedTask;
+    public ValueTask PreviousSearchResultAsync() => _preview?.InvokeVoidAsync("previousSearchResult") ?? ValueTask.CompletedTask;
+    public ValueTask CloseSearchAsync() => _preview?.InvokeVoidAsync("closeSearch") ?? ValueTask.CompletedTask;
     [JSInvokable] public Task OnPageChanged(int page) => PageChanged.InvokeAsync(page);
     [JSInvokable] public Task OnPreviewError(string message) => Error.InvokeAsync(message);
+    public ValueTask SetThumbnailsVisibleAsync(bool visible) => _preview?.InvokeVoidAsync("setThumbnailsVisible", visible) ?? ValueTask.CompletedTask;
+    public ValueTask SetViewModeAsync(string mode) => _preview?.InvokeVoidAsync("setViewMode", mode) ?? ValueTask.CompletedTask;
     public ValueTask GoToPageAsync(int page) => _preview?.InvokeVoidAsync("goToPage", page) ?? ValueTask.CompletedTask;
     public ValueTask SetZoomAsync(double zoom) => _preview?.InvokeVoidAsync("setZoom", zoom) ?? ValueTask.CompletedTask;
     public ValueTask FitWidthAsync() => _preview?.InvokeVoidAsync("fitWidth") ?? ValueTask.CompletedTask;

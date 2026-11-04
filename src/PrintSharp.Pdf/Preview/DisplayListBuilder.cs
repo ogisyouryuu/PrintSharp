@@ -8,6 +8,9 @@ namespace PrintSharp.Pdf.Preview;
 public sealed class DisplayListBuilder
 {
     internal List<DisplayCommand> Commands { get; } = [];
+    internal List<DisplayTextBox>? TextBoxes { get; private set; }
+    /// <summary>現在のセル文字列に対応する選択矩形を設定します。</summary>
+    public void SetTextBoxes(IEnumerable<DisplayTextBox>? boxes) => TextBoxes = boxes?.ToList();
     internal Dictionary<string, DisplayResource> Resources { get; }
     private readonly Dictionary<(SKTypeface, ushort, float), string> _glyphCache;
 

@@ -6,11 +6,23 @@ namespace PrintSharp.Pdf.Preview;
 /// <summary>バージョン 1 のページ描画命令。座標は左上原点の PDF ポイントです。</summary>
 public sealed record DisplayPage(int PageNumber, float Width, float Height, IReadOnlyList<DisplayCommand> Commands)
 {
+    /// <summary>検索用の書式適用済みセル文字列と文字領域。描画命令とは独立しています。</summary>
+    public IReadOnlyList<DisplayTextRegion> TextRegions { get; init; } = [];
     /// <summary>プロトコルのメジャーバージョン。</summary>
     public int SchemaVersion => 1;
     /// <summary>座標単位。</summary>
     public string Unit => "pt";
 }
+
+/// <summary>論理順の文字列と PDF ポイント単位のセル内容領域。</summary>
+public sealed record DisplayTextRegion(string Text, float X, float Y, float Width, float Height)
+{
+    /// <summary>UTF-16 範囲と組版済みの選択領域。null は未対応のレンダラーです。</summary>
+    public IReadOnlyList<DisplayTextBox>? Boxes { get; init; }
+}
+
+/// <summary>文字要素単位の論理範囲と、左上原点の選択矩形。</summary>
+public sealed record DisplayTextBox(int Start, int Length, float X, float Y, float Width, float Height, bool Rtl);
 
 /// <summary>有限の描画命令。未使用のフィールドは null です。</summary>
 public sealed record DisplayCommand(string Op)
@@ -49,7 +61,7 @@ public sealed class PreviewDocument
 
     internal PreviewDocument(IReadOnlyList<DisplayPage> pages, IReadOnlyDictionary<string, DisplayResource> resources, SKDocumentPdfMetadata metadata)
     {
-        Pages = pages.Select(p => p with { Commands = p.Commands.Select(c => c with {
+        Pages = pages.Select(p => p with { TextRegions = p.TextRegions.Select(r => r with { Boxes = r.Boxes?.ToList().AsReadOnly() }).ToList().AsReadOnly(), Commands = p.Commands.Select(c => c with {
             Values = c.Values?.ToList().AsReadOnly(), Dash = c.Dash?.ToList().AsReadOnly(), Glyphs = c.Glyphs?.ToList().AsReadOnly()
         }).ToList().AsReadOnly() }).ToList().AsReadOnly();
         Resources = new System.Collections.ObjectModel.ReadOnlyDictionary<string, DisplayResource>(resources.ToDictionary());

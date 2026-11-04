@@ -23,6 +23,28 @@ HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 �
 
 Canvas 预览：[TypeScript / Vue / Blazor 接入指南](doc/canvas-preview.zh-CN.md)。新增预览 API 按页返回 JSON Display List，并从同一快照下载 PDF；支持翻页、缩放和适配页面。[运行浏览器演示](packages/preview/README.md)。
 
+## TypeScript、Vue 与 Blazor 预览
+
+PDF 与 Canvas 共用不可变绘制计划，包括物理分页、换行、内边距和字形位置。Canvas 回放字形轮廓，不重新塑形文字；抗锯齿效果可能不同。
+
+- **连续滚动：** 支持单页与连续模式切换，仅为可见页及邻页创建画布，约束页面缓存和画布像素预算。缩放保留阅读位置，重绘期间保留已完成画面。
+- **缩略图：** 可选虚拟化侧栏支持点击跳页和当前页高亮，加载与绘制优先让位于正文。
+- **搜索：** 按需获取 `/text` 索引，支持不区分大小写的字面搜索、结果计数、上一处/下一处和文字框高亮。关键词最多 256 个 UTF-16 代码单元，结果最多 1,000 处。
+- **选择与复制：** 拖选后按 Ctrl+C / Command+C 或点击“复制”，保留多语言逻辑原文顺序。鼠标起止位置按实际文字框计算；demo 的选区摘要预留固定高度，防止拖选时纸张移动。
+
+预览 npm 包和 Blazor RCL 目前通过源码接入，尚未发布到 npm / NuGet。Vue 使用 `@printsharp/preview/vue`，Blazor 引用 `src/PrintSharp.Preview.Blazor`。方法、双向绑定、事件和部署文件见 [完整接入指南](doc/canvas-preview.zh-CN.md)及 [控件 README](packages/preview/README.md)。
+
+先在 5080 端口启动 API，再另开终端运行任一 demo：
+
+| Demo | 启动与验收说明 | 默认地址 |
+| --- | --- | --- |
+| Vue 3 + TypeScript | [Vue demo](demos/PrintSharp.Preview.Vue/README.md) | http://127.0.0.1:5199 |
+| Blazor Interactive Server | [Blazor demo](demos/PrintSharp.Preview.Blazor.Demo/README.md) | http://127.0.0.1:5200 |
+
+两个 demo 都包含两页样例、Excel 上传、JSON 编辑和同快照 PDF 下载。安装依赖及 Chromium 后，运行 `npm --prefix packages/preview test` 验证控件；运行 `npm --prefix packages/preview run test:demos` 验证两个 demo 与真实 API 的集成，包括鼠标拖选和剪贴板内容。复用已有服务及更改 Blazor 端口的方法见 demo README。
+
+选区仅覆盖当前已加载页面；虚拟化释放旧页时可能清除选区，尚无整份长文档的持久选区。完全被裁剪的原文仍可搜索，但没有可见的文字高亮或选择框。复制按钮需要 HTTPS/localhost 和浏览器剪贴板授权。已验证桌面 Chromium；触屏选择、Firefox/WebKit 和完整语义无障碍结构尚未专项验证。服务端快照目前使用单进程内存缓存。
+
 ## 为什么是 PrintSharp？
 
 传统报表系统常先用绝对坐标布局，再尝试转换为 Excel。微小的坐标差异就可能额外生成 Excel 列，导致原有布局崩坏。

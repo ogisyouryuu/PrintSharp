@@ -23,6 +23,28 @@ HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64
 
 Canvas preview: [TypeScript / Vue / Blazor integration guide](doc/canvas-preview.zh-CN.md). The new preview API returns per-page JSON display lists and a PDF from the same frozen rendering plan. Run the [browser demo](packages/preview/README.md) locally.
 
+## TypeScript, Vue, and Blazor preview
+
+PDF and Canvas share an immutable rendering plan, including pagination, wrapping, padding, and glyph positions. Canvas replays glyph outlines rather than reshaping text; antialiasing may differ.
+
+- **Continuous scrolling:** switch between single-page and continuous views. Visible pages and neighbors are virtualized, with bounded page caching and canvas pixel budgets. Zooming preserves the reading position and the completed canvas during redraw.
+- **Thumbnails:** an optional virtualized sidebar supports page navigation and current-page highlighting. Thumbnail loading and rendering yield to the main preview.
+- **Search:** a lazy `/text` index supports case-insensitive literal search, counts, previous/next navigation, and positioned text highlights. Queries are limited to 256 UTF-16 code units and 1,000 results.
+- **Selection and copying:** drag over text and use Ctrl+C / Command+C or Copy. Multilingual text retains its logical order. Mouse boundaries use actual text boxes, and demo selection summaries reserve their height so the page does not move during dragging.
+
+The preview npm package and Blazor RCL are available from source and are not yet published to npm / NuGet. Vue uses `@printsharp/preview/vue`; Blazor references `src/PrintSharp.Preview.Blazor`. Methods, bindings, events, and deployment files are documented in the [integration guide (Chinese)](doc/canvas-preview.zh-CN.md) and [package README](packages/preview/README.md).
+
+Start the API on port 5080, then run either demo in a separate terminal:
+
+| Demo | Setup and verification | Default address |
+| --- | --- | --- |
+| Vue 3 + TypeScript | [Vue demo](demos/PrintSharp.Preview.Vue/README.md) | http://127.0.0.1:5199 |
+| Blazor Interactive Server | [Blazor demo](demos/PrintSharp.Preview.Blazor.Demo/README.md) | http://127.0.0.1:5200 |
+
+Both demos include a two-page sample, Excel upload, JSON editing, and same-snapshot PDF download. After installing dependencies and Chromium, `npm --prefix packages/preview test` runs control regressions; `npm --prefix packages/preview run test:demos` verifies both demos against the real API, including mouse dragging and clipboard contents. The demo READMEs describe server reuse and alternate Blazor ports.
+
+Selection spans only mounted pages; releasing a virtualized page can clear the selection. Persistent whole-document selection is not implemented. Fully clipped text remains searchable but has no visible text highlight or selection box. Clipboard-button access requires HTTPS/localhost and browser permission. Desktop Chromium is tested; touch selection, Firefox/WebKit, and complete semantic accessibility are not yet verified. Preview snapshots currently use single-process server memory.
+
 ## Why PrintSharp?
 
 Traditional reporting systems often start with absolute coordinates and try to convert them to Excel later. Small coordinate differences can create extra Excel columns and break the intended layout.

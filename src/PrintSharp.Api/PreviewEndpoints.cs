@@ -21,6 +21,11 @@ public static class PreviewEndpoints
                 throw new PrintValidationException("pageNumber", "page_out_of_range", "Page number is outside the document.", 404);
             return Cached(context, entry, entry.Pages[pageNumber - 1], $"page-{pageNumber}");
         });
+        app.MapGet("/api/v1/previews/{id}/text", (string id, HttpContext context, PreviewStore store) =>
+        {
+            var entry = store.Get(id, context.User);
+            return Cached(context, entry, entry.TextIndex, "text");
+        });
         app.MapGet("/api/v1/previews/{id}/pdf", (string id, HttpContext context, PreviewStore store) =>
         {
             var entry = store.Get(id, context.User);

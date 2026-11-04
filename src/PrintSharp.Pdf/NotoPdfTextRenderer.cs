@@ -56,6 +56,7 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTe
         };
         if (style.WrapText && style.HorizontalAlignment == HorizontalAlignment.Justify)
             JustifyLines(block, content.Width);
+        builder.SetTextBoxes(SelectionBoxes(block, text, content, Math.Max(0, offset)));
         builder.Add(new("save"));
         builder.Add(new("clipRect") { Values = [content.X, content.Y, content.Width, content.Height] });
         foreach (var run in block.FontRuns.Where(r => r.RunKind != FontRunKind.TrailingWhitespace && r.Glyphs.Length > 0))
@@ -84,6 +85,40 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTe
         builder.Add(new("restore"));
     }
 
+    private static IReadOnlyList<DisplayTextBox> SelectionBoxes(TextBlock block, string text, LayoutRect content, float offset)
+    {
+        // UTF-16 の文字要素を使用し、サロゲート対や結合文字を分断しません。
+        var starts = System.Globalization.StringInfo.ParseCombiningCharacters(text);
+        var boxes = new List<DisplayTextBox>();
+        var runs = block.FontRuns.OrderBy(r => r.Start).ToArray();
+        int runIndex = 0;
+        for (int i = 0; i < starts.Length; i++)
+        {
+            int start = starts[i], end = i + 1 < starts.Length ? starts[i + 1] : text.Length;
+            int first = block.CharacterToCodePointIndex(start), last = block.CharacterToCodePointIndex(end);
+            while (runIndex < runs.Length && runs[runIndex].End <= first) runIndex++;
+            for (int j = runIndex; j < runs.Length && runs[j].Start < last; j++)
+            {
+                var run = runs[j];
+                if (text.AsSpan(start, end - start).IndexOfAny('\r', '\n') >= 0) continue;
+                float a = run.GetXCoordOfCodePointIndex(Math.Max(first, run.Start));
+                float b = run.GetXCoordOfCodePointIndex(Math.Min(last, run.End));
+                float x = content.X + Math.Min(a, b), y = content.Y + offset + run.Line.YCoord;
+                float width = Math.Abs(b - a), height = run.Line.Height;
+                if (width <= 0.0001f)
+                {
+                    // 合字内のゼロ幅要素は直前の論理範囲へ含めます。
+                    if (boxes.Count > 0 && boxes[^1].Start + boxes[^1].Length == start)
+                        boxes[^1] = boxes[^1] with { Length = end - boxes[^1].Start };
+                    continue;
+                }
+                if (x + width <= content.X || x >= content.Right || y + height <= content.Y || y >= content.Bottom) continue;
+                boxes.Add(new(start, end - start, x, y, width, height, a > b));
+            }
+        }
+        return boxes;
+    }
+
     private static void JustifyLines(TextBlock block, float width)
     {
         foreach (var line in block.Lines.Take(block.Lines.Count - 1))
@@ -109,6 +144,9 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTe
                 run.GlyphPositions = new Slice<SKPoint>(positions);
                 float x = run.XCoord;
                 float shift = Shift(x);
+                var coordinates = run.RelativeCodePointXCoords.ToArray();
+                for (int i = 0; i < coordinates.Length; i++) coordinates[i] += Shift(x + coordinates[i]) - shift;
+                run.RelativeCodePointXCoords = new Slice<float>(coordinates);
                 run.XCoord += shift;
                 run.Width += Shift(x + run.Width) - shift;
             }

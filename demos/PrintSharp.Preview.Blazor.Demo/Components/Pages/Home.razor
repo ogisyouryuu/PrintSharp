@@ -17,8 +17,10 @@
     @if (_error is not null) { <p role="alert" class="error">@_error</p> }
     @if (_documentId is not null)
     {
-        <p class="summary" data-testid="summary">@_pageCount 页 · 当前第 @_page 页 · @(_loaded ? "绘制完成" : "加载中")</p>
-        <PrintSharpPreview DocumentId="@_documentId" Height="600px" PageChanged="PageChanged" Error="message => _error = message" />
+        <p class="summary" data-testid="summary">@_pageCount 页 · 当前第 @_page 页 · @(_viewMode == "continuous" ? "连续滚动" : "单页") · 缩略图@(_thumbnails ? "已打开" : "已关闭") · @(_loaded ? "绘制完成" : "加载中")</p>
+        @if (!string.IsNullOrEmpty(_search?.Query)) { <p data-testid="search-summary">搜索 @_search.Query：@_search.Current / @_search.Total</p> }
+        <p class="selection-summary" data-testid="selection-summary">@(string.IsNullOrEmpty(_selectedText) ? "未选择文字" : $"已选择：{_selectedText}")</p>
+        <PrintSharpPreview DocumentId="@_documentId" Height="600px" @bind-ViewMode="_viewMode" @bind-Thumbnails="_thumbnails" @bind-TextSelection="_textSelection" SelectionChanged="text => _selectedText = text" SearchChanged="state => _search = state" PageChanged="PageChanged" Error="message => _error = message" />
     }
     else { <section class="empty">点击“使用内置两页示例”即可验收，无需准备文件。</section> }
 </main>
@@ -36,6 +38,11 @@
     }
     private bool _loaded;
     private int _page = 1;
+    private PrintSharp.Preview.Blazor.PreviewSearchState? _search;
+    private bool _textSelection = true;
+    private string _selectedText = "";
+    private bool _thumbnails;
+    private string _viewMode = "single-page";
     private int _pageCount;
     private void SelectFile(InputFileChangeEventArgs args) => _file = args.File;
     private void PageChanged(int page) { _page = page; _loaded = true; }
@@ -58,7 +65,7 @@
             var old = _documentId;
             _documentId = manifest.GetProperty("documentId").GetString();
             _pageCount = manifest.GetProperty("pageCount").GetInt32();
-            _page = 1; _loaded = false;
+            _page = 1; _loaded = false; _search = null; _selectedText = "";
             if (old is not null) { using var deleted = await client.DeleteAsync($"/api/v1/previews/{old}"); }
         }
         catch (Exception exception) { _error = exception.Message; }

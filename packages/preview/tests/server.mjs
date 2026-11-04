@@ -1,7 +1,11 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 const files = {
+  '/selection.js': ['text/javascript', new URL('../dist/selection.js', import.meta.url)],
+  '/search.js': ['text/javascript', new URL('../dist/search.js', import.meta.url)],
   '/': ['text/html', new URL('./test.html', import.meta.url)],
+  '/thumbnails.js': ['text/javascript', new URL('../dist/thumbnails.js', import.meta.url)],
+  '/continuous.js': ['text/javascript', new URL('../dist/continuous.js', import.meta.url)],
   '/index.js': ['text/javascript', new URL('../dist/index.js', import.meta.url)],
   '/vue.js': ['text/javascript', new URL('../dist/vue.js', import.meta.url)],
   '/vue-runtime.js': ['text/javascript', new URL('../node_modules/vue/dist/vue.esm-browser.js', import.meta.url)],

@@ -10,6 +10,31 @@ namespace PrintSharp.Pdf.Tests;
 public sealed class PreviewTests
 {
     [Theory]
+    [InlineData(HorizontalAlignment.Left)]
+    [InlineData(HorizontalAlignment.Right)]
+    [InlineData(HorizontalAlignment.Justify)]
+    public void SelectionBoxesPreserveGraphemesAndLogicalText(HorizontalAlignment alignment)
+    {
+        const string text = "office ffi e\u0301 𠮷 中文 日本語 한국어\nالعربية مَرْحَبًا alpha beta gamma delta epsilon";
+        var document = Document.Create(d => d.Page(p => p.Settings(s => s.Margins(0)).Columns(220).Rows(200)
+            .Cell(0, 0, c => c.Text(text).Style(new CellStyle { WrapText = true, HorizontalAlignment = alignment, Font = new("NotoSans", 16) }))));
+        var page = SkiaPdfRenderer.Instance.CreatePreview(document).Pages[0];
+        var region = Assert.Single(page.TextRegions);
+        Assert.NotNull(region.Boxes);
+        var boundaries = System.Globalization.StringInfo.ParseCombiningCharacters(text).Append(text.Length).ToHashSet();
+        var covered = new bool[text.Length];
+        foreach (var box in region.Boxes)
+        {
+            Assert.Contains(box.Start, boundaries); Assert.Contains(box.Start + box.Length, boundaries);
+            Assert.True(box.Width > 0 && float.IsFinite(box.X) && box.Height > 0);
+            for (int i = box.Start; i < box.Start + box.Length; i++) covered[i] = true;
+        }
+        for (int i = 0; i < text.Length; i++) if (!char.IsWhiteSpace(text[i])) Assert.True(covered[i], $"Missing UTF-16 index {i}");
+        Assert.Contains(region.Boxes, b => b.Rtl);
+        Assert.True(region.Boxes.Select(b => b.Y).Distinct().Count() > 1);
+    }
+
+    [Theory]
     [InlineData(null, 1, 3, 2)]
     [InlineData(7f, 2, 14, 14)]
     [InlineData(0f, 1, 0, 0)]
@@ -24,6 +49,9 @@ public sealed class PreviewTests
         var clip = Assert.Single(commands, c => c.Op == "clipRect").Values!;
         Assert.Equal(x, clip[0]); Assert.Equal(y, clip[1]);
         Assert.Equal(100 * scale - 2 * x, clip[2]); Assert.Equal(40 * scale - 2 * y, clip[3]);
+        var region = Assert.Single(snapshot.Pages[0].TextRegions);
+        Assert.Equal("Alpha", region.Text);
+        Assert.Equal(clip, new[] { region.X, region.Y, region.Width, region.Height });
         var glyph = Assert.Single(commands, c => c.Op == "glyphRun").Glyphs![0];
         Assert.Equal(x, glyph.X, 3);
         using var pdf = UglyToad.PdfPig.PdfDocument.Open(snapshot.ToPdfBytes());
@@ -79,6 +107,8 @@ public sealed class PreviewTests
             .Cell(2, 0, c => c.Text("Clipped very long text outside the cell bounds 123456789").Style(new CellStyle { Font = new("NotoSans", 22) }))));
         var preview = SkiaPdfRenderer.Instance.CreatePreview(document);
         var page = Assert.Single(preview.Pages);
+        Assert.Contains(page.TextRegions, r => r.Text.Contains("العربية") && r.Text.Contains("中文"));
+        Assert.Equal(3, page.TextRegions.Count);
         Assert.Contains(preview.Resources.Values, r => r.Kind == "path" && r.Data.Length > 0);
         Assert.Contains(preview.Resources.Values, r => r.Kind == "png");
         var root = new DirectoryInfo(AppContext.BaseDirectory);

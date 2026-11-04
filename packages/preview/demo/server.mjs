@@ -9,7 +9,7 @@ createServer(async (request, response) => {
     upstream.on('error', () => { response.writeHead(502); response.end('Start PrintSharp.Api on port 5080.'); });
     request.pipe(upstream); return;
   }
-  const file = request.url === '/' ? ['text/html; charset=utf-8', './index.html'] : request.url === '/preview.js' ? ['text/javascript', '../dist/index.js'] : null;
+  const file = request.url === '/' ? ['text/html; charset=utf-8', './index.html'] : request.url === '/selection.js' ? ['text/javascript', '../dist/selection.js'] : request.url === '/search.js' ? ['text/javascript', '../dist/search.js'] : request.url === '/thumbnails.js' ? ['text/javascript', '../dist/thumbnails.js'] : request.url === '/continuous.js' ? ['text/javascript', '../dist/continuous.js'] : request.url === '/preview.js' ? ['text/javascript', '../dist/index.js'] : null;
   if (!file) { response.writeHead(404); response.end(); return; }
   try { response.setHeader('Content-Type', file[0]); response.end(await readFile(new URL(file[1], import.meta.url))); }
   catch { response.writeHead(500); response.end('Run npm run build first.'); }

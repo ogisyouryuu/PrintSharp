@@ -117,6 +117,7 @@ public sealed class SkiaPdfRenderer
                 throw new ArgumentOutOfRangeException(nameof(options));
             cancellationToken.ThrowIfCancellationRequested();
             var builder = new DisplayListBuilder(resources, glyphCache);
+            var textRegions = new List<DisplayTextRegion>();
             foreach (var cell in page.Cells) { cancellationToken.ThrowIfCancellationRequested(); DrawCellBackground(builder, cell, scale); }
             foreach (var cell in page.Cells)
             {
@@ -132,9 +133,11 @@ public sealed class SkiaPdfRenderer
                     var font = style.Font ?? FontSpec.Default;
                     style = style with { Font = font with { Family = resolver.Resolve(font).ResolvedFamilyName } };
                 }
+                builder.SetTextBoxes(null);
                 textRenderer.AppendText(builder, text, style, content, scale);
+                textRegions.Add(new(text, content.X, content.Y, content.Width, content.Height) { Boxes = builder.TextBoxes?.AsReadOnly() });
             }
-            pages.Add(new(pages.Count + 1, MathF.Round(width * 100) / 100, MathF.Round(height * 100) / 100, builder.Commands.AsReadOnly()));
+            pages.Add(new(pages.Count + 1, MathF.Round(width * 100) / 100, MathF.Round(height * 100) / 100, builder.Commands.AsReadOnly()) { TextRegions = textRegions.AsReadOnly() });
         }
         var metadata = SKDocumentPdfMetadata.Default;
         metadata.Title = document.Metadata.Title;

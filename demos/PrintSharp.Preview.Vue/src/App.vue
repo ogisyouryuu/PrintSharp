@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, shallowRef, onBeforeUnmount } from 'vue';
-import { createHttpPreviewSource, type Manifest, type PreviewSource, type Zoom } from '@printsharp/preview';
+import { createHttpPreviewSource, type SearchState, type Manifest, type PreviewSource, type ViewMode, type Zoom } from '@printsharp/preview';
 import { PrintSharpPreview } from '@printsharp/preview/vue';
 
 const data = ref('{"tables":[{"name":"T","columns":[{"name":"Value","type":"string"}],"rows":[{"Value":"中文 日本語 한국어 العربية مرحبًا / Hello PrintSharp"}]}]}');
@@ -9,6 +9,11 @@ const manifest = shallowRef<Manifest>();
 const source = shallowRef<PreviewSource>();
 const page = ref(1);
 const zoom = ref<Zoom>('fit-width');
+const viewMode = ref<ViewMode>('single-page');
+const thumbnails = ref(false);
+const textSelection = ref(true);
+const selectedText = ref('');
+const searchState = ref<SearchState>();
 const busy = ref(false);
 const error = ref('');
 const loaded = ref(false);
@@ -25,7 +30,7 @@ async function create(useSample: boolean) {
     const next = await response.json();
     if (!response.ok) throw new Error(next.detail ?? `HTTP ${response.status}`);
     const old = manifest.value;
-    manifest.value = next; page.value = 1; zoom.value = 'fit-width'; loaded.value = false;
+    manifest.value = next; page.value = 1; zoom.value = 'fit-width'; loaded.value = false; searchState.value = undefined; selectedText.value = '';
     source.value = createHttpPreviewSource({ baseUrl: '/api/v1/previews', documentId: next.documentId });
     if (old) void fetch(`/api/v1/previews/${old.documentId}`, { method: 'DELETE' });
   } catch (exception) { error.value = String(exception); }
@@ -48,14 +53,17 @@ onBeforeUnmount(() => { source.value = undefined; });
       </div>
     </section>
     <p v-if="error" role="alert" class="error">{{ error }}</p>
-    <p v-if="manifest" class="summary" data-testid="summary">{{ manifest.pageCount }} 页 · 当前第 {{ page }} 页 · 缩放 {{ zoom }} · {{ loaded ? '绘制完成' : '加载中' }}</p>
+    <p v-if="manifest" class="summary" data-testid="summary">{{ manifest.pageCount }} 页 · 当前第 {{ page }} 页 · {{ viewMode === 'continuous' ? '连续滚动' : '单页' }} · 缩略图{{ thumbnails ? '已打开' : '已关闭' }} · 缩放 {{ zoom }} · {{ loaded ? '绘制完成' : '加载中' }}</p>
+    <p v-if="searchState?.query" data-testid="search-summary">搜索 {{ searchState.query }}：{{ searchState.current }} / {{ searchState.total }}</p>
+    <p v-if="manifest" class="selection-summary" data-testid="selection-summary">{{ selectedText ? `已选择：${selectedText}` : '未选择文字' }}</p>
     <div v-if="source" class="preview">
-      <PrintSharpPreview :source="source" v-model:page="page" v-model:zoom="zoom" @loadingchange="loaded = !$event" @error="error = String($event)" />
+      <PrintSharpPreview :source="source" v-model:page="page" v-model:zoom="zoom" v-model:view-mode="viewMode" v-model:thumbnails="thumbnails" v-model:text-selection="textSelection" @selectionchange="selectedText = $event" @searchchange="searchState = $event" @loadingchange="loaded = !$event" @error="error = String($event)" />
     </div>
     <section v-else class="empty">点击“使用内置两页示例”即可验收，无需准备文件。</section>
   </main>
 </template>
 
 <style>
+.selection-summary{height:1.5em;line-height:1.5;white-space:pre;overflow:hidden;text-overflow:ellipsis}
 body{margin:0;background:#f4f6fa;color:#172033;font:15px system-ui,sans-serif}main{max-width:1100px;margin:32px auto;padding:0 24px}.badge{font-size:12px;letter-spacing:2px;color:#315ac1}h1{font-size:30px;margin:10px 0}header p{color:#59657a}.inputs{display:grid;gap:10px;background:#fff;border:1px solid #d9e0eb;border-radius:10px;padding:18px;margin-top:24px}textarea{min-height:85px;resize:vertical;padding:10px;font:14px monospace;border:1px solid #bdc8da;border-radius:5px}.actions{display:flex;align-items:center;gap:15px;flex-wrap:wrap}button{padding:9px 14px;border:1px solid #b7c7e5;border-radius:5px;background:#edf3ff;color:#244ea6;cursor:pointer}button:disabled{opacity:.5;cursor:default}a{color:#244ea6}.preview{height:600px}.summary{font-variant-numeric:tabular-nums;color:#38537c}.empty{margin-top:20px;padding:70px;text-align:center;border:1px dashed #b7c7e5;border-radius:10px}.error{color:#a92727;white-space:pre-wrap}
 </style>

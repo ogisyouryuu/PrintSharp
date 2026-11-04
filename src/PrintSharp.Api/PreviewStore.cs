@@ -47,9 +47,12 @@ public sealed class PreviewStore : IDisposable
         var manifest = JsonSerializer.SerializeToUtf8Bytes(new { schemaVersion = 1, documentId = id, revision, expiresAt = expires,
             pageCount = pages.Count, pages = document.Pages.Select(p => new { p.PageNumber, p.Width, p.Height }) }, Json);
         size += manifest.Length;
+        var textIndex = JsonSerializer.SerializeToUtf8Bytes(new { schemaVersion = 1, documentId = id, revision,
+            pages = document.Pages.Select(p => new { p.PageNumber, regions = p.TextRegions }) }, Json);
+        size += textIndex.Length;
         CheckSize(size);
         var entry = new PreviewEntry(id, revision, expires, Owner(user), pages.ToArray(), pdf,
-            manifest, size);
+            manifest, size, textIndex);
         lock (_gate)
         {
             Sweep();
@@ -92,4 +95,4 @@ public sealed class PreviewStore : IDisposable
     public void Dispose() { _timer.Dispose(); lock (_gate) { _entries.Clear(); _bytes = 0; } }
 }
 
-public sealed record PreviewEntry(string Id, string Revision, DateTimeOffset ExpiresAt, string Owner, byte[][] Pages, byte[] Pdf, byte[] Manifest, long Size);
+public sealed record PreviewEntry(string Id, string Revision, DateTimeOffset ExpiresAt, string Owner, byte[][] Pages, byte[] Pdf, byte[] Manifest, long Size, byte[] TextIndex);
