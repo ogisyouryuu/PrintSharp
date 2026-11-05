@@ -21,7 +21,7 @@
 
 HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
-Canvas プレビュー：[TypeScript / Vue / Blazor 接続ガイド](doc/canvas-preview.zh-CN.md)。ページごとの JSON Display List と同じ描画計画から生成する PDF に対応します。[ブラウザーデモ](packages/preview/README.md)でページ移動と拡大縮小を確認できます。
+Canvas プレビュー：[プレビュー用パッケージ README](packages/preview/README.md)に TypeScript / Vue / Blazor の API を記載しています。ページごとの JSON Display List と同じ描画計画から PDF を生成します。[ブラウザーデモ](packages/preview/README.md)でページ移動と拡大縮小を確認できます。
 
 ## TypeScript・Vue・Blazor のプレビュー
 
@@ -32,7 +32,7 @@ PDF と Canvas は、物理改ページ、折り返し、余白、字形位置�
 - **検索：** 必要時に `/text` 索引を取得し、大文字小文字を区別しないリテラル検索、件数表示、前後の結果への移動、文字矩形のハイライトに対応します。検索語は UTF-16 コード単位で 256、結果は 1,000 件が上限です。
 - **選択とコピー：** ドラッグして Ctrl+C / Command+C またはコピーボタンを使うと、多言語の論理順で原文をコピーできます。マウスの始点と終点は実際の文字矩形から求めます。デモの選択状態欄は高さを固定し、ドラッグ中に用紙が動かないようにしています。
 
-プレビュー用 npm パッケージと Blazor RCL はソースから利用でき、npm / NuGet には未公開です。Vue は `@printsharp/preview/vue`、Blazor は `src/PrintSharp.Preview.Blazor` を参照します。メソッド、双方向バインディング、イベント、配置ファイルは[接続ガイド（中国語）](doc/canvas-preview.zh-CN.md)と[パッケージ README](packages/preview/README.md)を参照してください。
+プレビュー用 npm パッケージと Blazor RCL はソースから利用でき、npm / NuGet には未公開です。Vue は `@printsharp/preview/vue`、Blazor は `src/PrintSharp.Preview.Blazor` を参照します。メソッド、双方向バインディング、イベント、配置ファイルは[パッケージ README](packages/preview/README.md)を参照してください。
 
 API をポート 5080 で起動し、別のターミナルでデモを実行します。
 
@@ -216,7 +216,7 @@ Excel テンプレートは `ExcelTemplateParser.Instance.RenderReport(path, dat
 
 ## パッケージ
 
-PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します。公開時は `Fonts/`、`Licenses/`、ネイティブライブラリも配置してください。`SaveAsPdf()` と `ToPdfBytes()` の呼び出し方は維持し、`ToPdfDocument()` は読み取り専用の `RenderedPdfDocument` を返します。詳細は [PDF バックエンド移行](doc/pdf-backend-migration.md) を参照してください。
+PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します。公開時は `Fonts/`、`Licenses/`、ネイティブライブラリも配置してください。`SaveAsPdf()` と `ToPdfBytes()` の呼び出し方は維持し、`ToPdfDocument()` は読み取り専用の `RenderedPdfDocument` を返します。
 
 | パッケージ | 目的 | 主な依存関係 |
 | --- | --- | --- |
@@ -263,5 +263,5 @@ git tag v0.1.2
 git push origin v0.1.2
 ```
 
-使用済みのタグやバージョンは再利用しないでください。初回設定と詳しい手順は[中国語の NuGet 公開ガイド](doc/nuget-release.zh-CN.md)を参照してください。
+使用済みのタグやバージョンは再利用しないでください。
 初回公開前に、GitHub Actions の variable `NUGET_USER` を設定し、NuGet.org の Trusted Publishing で `ogisyouryuu/PrintSharp` リポジトリの `nuget.yml` ワークフローに `PrintSharp*` パッケージの公開を許可してください。

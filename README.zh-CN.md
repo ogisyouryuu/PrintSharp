@@ -21,7 +21,7 @@
 
 HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
-Canvas 预览：[TypeScript / Vue / Blazor 接入指南](doc/canvas-preview.zh-CN.md)。新增预览 API 按页返回 JSON Display List，并从同一快照下载 PDF；支持翻页、缩放和适配页面。[运行浏览器演示](packages/preview/README.md)。
+Canvas 预览的 TypeScript / Vue / Blazor API 见[预览包 README](packages/preview/README.md)。预览 API 按页返回 JSON Display List，并从同一快照下载 PDF；支持翻页、缩放和适配页面。[运行浏览器演示](packages/preview/README.md)。
 
 ## TypeScript、Vue 与 Blazor 预览
 
@@ -32,7 +32,7 @@ PDF 与 Canvas 共用不可变绘制计划，包括物理分页、换行、内�
 - **搜索：** 按需获取 `/text` 索引，支持不区分大小写的字面搜索、结果计数、上一处/下一处和文字框高亮。关键词最多 256 个 UTF-16 代码单元，结果最多 1,000 处。
 - **选择与复制：** 拖选后按 Ctrl+C / Command+C 或点击“复制”，保留多语言逻辑原文顺序。鼠标起止位置按实际文字框计算；demo 的选区摘要预留固定高度，防止拖选时纸张移动。
 
-预览 npm 包和 Blazor RCL 目前通过源码接入，尚未发布到 npm / NuGet。Vue 使用 `@printsharp/preview/vue`，Blazor 引用 `src/PrintSharp.Preview.Blazor`。方法、双向绑定、事件和部署文件见 [完整接入指南](doc/canvas-preview.zh-CN.md)及 [控件 README](packages/preview/README.md)。
+预览 npm 包和 Blazor RCL 目前通过源码接入，尚未发布到 npm / NuGet。Vue 使用 `@printsharp/preview/vue`，Blazor 引用 `src/PrintSharp.Preview.Blazor`。方法、双向绑定、事件和部署文件见[预览包 README](packages/preview/README.md)。
 
 先在 5080 端口启动 API，再另开终端运行任一 demo：
 
@@ -214,7 +214,7 @@ Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settin
 
 ## NuGet 包
 
-PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布时保留 `Fonts/`、`Licenses/` 及原生运行库。`SaveAsPdf()`、`ToPdfBytes()` 保留调用方式，`ToPdfDocument()` 改为返回只读的 `RenderedPdfDocument`。接口变化与 Linux 部署见 [PDF 后端迁移说明](doc/pdf-backend-migration.md)。
+PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布时保留 `Fonts/`、`Licenses/` 及原生运行库。`SaveAsPdf()`、`ToPdfBytes()` 保留调用方式，`ToPdfDocument()` 返回只读的 `RenderedPdfDocument`。
 
 | 包 | 用途 | 主要依赖 |
 | --- | --- | --- |
@@ -261,5 +261,5 @@ git tag v0.1.2
 git push origin v0.1.2
 ```
 
-请使用尚未发布的版本号和标签。首次配置与详细步骤见 [NuGet 发布说明](doc/nuget-release.zh-CN.md)。
+请使用尚未发布的版本号和标签。
 首次发布前，还需在 GitHub Actions variables 中设置 `NUGET_USER`，并在 NuGet.org Trusted Publishing 中授权仓库 `ogisyouryuu/PrintSharp` 的 `nuget.yml` 工作流发布 `PrintSharp*` 包。

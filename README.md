@@ -21,7 +21,7 @@ Create one Excel-like grid document, then render it consistently to **Excel**, *
 
 HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
 
-Canvas preview: [TypeScript / Vue / Blazor integration guide](doc/canvas-preview.zh-CN.md). The new preview API returns per-page JSON display lists and a PDF from the same frozen rendering plan. Run the [browser demo](packages/preview/README.md) locally.
+Canvas preview: the TypeScript / Vue / Blazor package and API details are in the [preview package README](packages/preview/README.md). The preview API returns per-page JSON display lists and a PDF from the same frozen rendering plan. Run the [browser demo](packages/preview/README.md) locally.
 
 ## TypeScript, Vue, and Blazor preview
 
@@ -32,7 +32,7 @@ PDF and Canvas share an immutable rendering plan, including pagination, wrapping
 - **Search:** a lazy `/text` index supports case-insensitive literal search, counts, previous/next navigation, and positioned text highlights. Queries are limited to 256 UTF-16 code units and 1,000 results.
 - **Selection and copying:** drag over text and use Ctrl+C / Command+C or Copy. Multilingual text retains its logical order. Mouse boundaries use actual text boxes, and demo selection summaries reserve their height so the page does not move during dragging.
 
-The preview npm package and Blazor RCL are available from source and are not yet published to npm / NuGet. Vue uses `@printsharp/preview/vue`; Blazor references `src/PrintSharp.Preview.Blazor`. Methods, bindings, events, and deployment files are documented in the [integration guide (Chinese)](doc/canvas-preview.zh-CN.md) and [package README](packages/preview/README.md).
+The preview npm package and Blazor RCL are available from source and are not yet published to npm / NuGet. Vue uses `@printsharp/preview/vue`; Blazor references `src/PrintSharp.Preview.Blazor`. Methods, bindings, events, and deployment files are documented in the [package README](packages/preview/README.md).
 
 Start the API on port 5080, then run either demo in a separate terminal:
 
@@ -215,7 +215,7 @@ Custom paper requires positive width and height. Text wrapping does not automati
 
 ## Packages
 
-PDF output uses SkiaSharp with bundled Noto fonts and HarfBuzz shaping. Keep the `Fonts/`, `Licenses/` and native runtime assets when publishing. `SaveAsPdf()` and `ToPdfBytes()` retain their call signatures; `ToPdfDocument()` now returns a read-only `RenderedPdfDocument`. See [PDF backend migration](doc/pdf-backend-migration.md) for API changes and Linux deployment.
+PDF output uses SkiaSharp with bundled Noto fonts and HarfBuzz shaping. Keep the `Fonts/`, `Licenses/` and native runtime assets when publishing. `SaveAsPdf()` and `ToPdfBytes()` retain their call signatures; `ToPdfDocument()` returns a read-only `RenderedPdfDocument`.
 
 | Package | Purpose | Primary dependency |
 | --- | --- | --- |
@@ -262,6 +262,6 @@ git tag v0.1.2
 git push origin v0.1.2
 ```
 
-Use an unused `vMAJOR.MINOR.PATCH` version. The workflow builds and tests the solution, packs the four library packages, validates their contents, builds a local package consumer, and publishes to NuGet.org through Trusted Publishing; no local API key is needed. See the [Chinese release guide](doc/nuget-release.zh-CN.md) for setup and recovery details.
+Use an unused `vMAJOR.MINOR.PATCH` version. The workflow builds and tests the solution, packs the four library packages, validates their contents, builds a local package consumer, and publishes to NuGet.org through Trusted Publishing; no local API key is needed.
 
 Configure a GitHub Actions repository variable named `NUGET_USER` with the NuGet.org profile name. On NuGet.org, add a Trusted Publishing policy for repository owner `ogisyouryuu`, repository `PrintSharp`, and workflow file `nuget.yml`. Grant the policy permission to publish new package versions for the four `PrintSharp*` packages.

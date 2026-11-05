@@ -7,7 +7,7 @@
 - **文档构建找不到站点内容**：在 `docs-site/` 安装 lockfile 指定的依赖，再运行 `npm run docs:build`；构建输出位于 `docs-site/.vitepress/dist/`。
 - **API 根路径返回 404**：API README 说明根路径 `/` 没有页面。使用 `GET /api/v1/health` 检查本机服务状态。
 - **Linux API 缺少字体或原生库**：部署时保留完整 `dotnet publish` 输出，包括 `Fonts/`、`Licenses/` 及 Skia/HarfBuzz 库；Rocky 所需系统包见[部署](/operations/deployment)。
-- **Rocky PDF 字体异常**：先对照 [多语言 PDF 验证记录](https://github.com/ogisyouryuu/PrintSharp/blob/main/doc/multilingual-pdf-validation.md) 的系统依赖、发布文件和 Poppler 检查方式。记录所验证的是 Rocky 9.6/10.2 x64，不等于任意 Linux/VPS 环境。
+- **Rocky PDF 字体异常**：确认发布目录包含 `Fonts/`、`Licenses/` 及 Skia/HarfBuzz 原生库，并检查 Rocky 系统依赖和 Poppler 输出。不同发行版及架构需要分别验证。
 
 ## 建议检查项（尚未验证为通用修复）
 

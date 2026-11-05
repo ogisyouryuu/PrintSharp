@@ -27,4 +27,4 @@ HTTP 客户端 --模板与数据--> PrintSharp.Api
 
 ## 架构文档状态
 
-`src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md` 保留了较早的设计构想，其中部分段落提及已替换的 PDFsharp。当前 PDF 后端迁移事实记录于 `doc/pdf-backend-migration.md`。更改架构说明前应以当前项目引用和实现代码复核，避免将未来目标或过时示意写成现状。
+`src/PrintSharp/PrintSharp_Architecture_ExcelGridFirst_v2_中文版.md` 保留了较早的设计构想，其中部分段落提及已替换的 PDFsharp。更改架构说明前应以当前项目引用和实现代码复核，避免将未来目标或过时示意写成现状。

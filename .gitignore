@@ -14,6 +14,7 @@ artifacts/
 docs-site/node_modules/
 docs-site/.vitepress/cache/
 docs-site/.vitepress/dist/
+local/
 
 node_modules/
 packages/preview/dist/

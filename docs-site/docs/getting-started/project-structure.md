@@ -23,7 +23,6 @@
 - 根目录 `README.md`、`README.zh-CN.md`、`README.ja.md`：GitHub 主页的英语、简体中文和日语介绍。
 - `docs-site/docs/`：本门户的中文 Markdown 源文件。
 - `docs-site/`：独立的 VitePress 配置、Node 依赖和静态站点构建产物。
-- `doc/`：迁移、发布和验证记录，以及微服务实施规格等现有资料。
 - `eng/`：Linux 多语言 PDF 验证脚本。
 - `src/PrintSharp.Pdf/Fonts` 与 `Licenses`：随 PDF 包分发的字体与许可说明。
 

@@ -31,6 +31,6 @@ dotnet test PrintSharp.slnx -c Release
 dotnet run --project tests/PrintSharp.Excel.AotSmoke
 ```
 
-Rocky Linux 的多语言 PDF 真实 HTTP 验证脚本为 `eng/verify-multilingual-pdf.sh`，需在具备 .NET 10、脚本要求的 Linux 依赖及 `poppler-utils` 的 Rocky 环境执行。历史验证详情及适用范围见[多语言 PDF 验证记录](https://github.com/ogisyouryuu/PrintSharp/blob/main/doc/multilingual-pdf-validation.md)。
+Rocky Linux 的多语言 PDF 真实 HTTP 验证脚本为 `eng/verify-multilingual-pdf.sh`，需在具备 .NET 10、脚本要求的 Linux 依赖及 `poppler-utils` 的 Rocky 环境执行。
 
 上述内容记录的是仓库入口和已有工作流，不表示本页编辑期间重新运行过这些 .NET 检查。
