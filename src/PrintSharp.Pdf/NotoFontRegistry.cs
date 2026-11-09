@@ -10,6 +10,7 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
 {
     private static readonly Lazy<NotoFontRegistry> Shared = new(() => new(Path.Combine(AppContext.BaseDirectory, "Fonts")));
     private readonly Dictionary<(string Family, bool Bold), SKTypeface> _faces = new();
+    private readonly Dictionary<(string Family, bool Bold), SKFont> _fonts = new();
     private static readonly string[] Families = ["NotoSansCJKjp", "NotoSerifCJKjp", "NotoSansArabic", "NotoSans"];
 
     /// <summary>アプリケーション出力先の Fonts を共有します。</summary>
@@ -26,7 +27,9 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
                     string extension = family.Contains("CJK", StringComparison.Ordinal) ? "otf" : "ttf";
                     string path = Path.Combine(directory, $"{family}-{(bold ? "Bold" : "Regular")}.{extension}");
                     if (!File.Exists(path)) throw new FileNotFoundException("Bundled Noto font not found.", path);
-                    _faces.Add((family, bold), SKTypeface.FromFile(path) ?? throw new InvalidDataException($"Invalid font: {path}"));
+                    var face = SKTypeface.FromFile(path) ?? throw new InvalidDataException($"Invalid font: {path}");
+                    _faces.Add((family, bold), face);
+                    _fonts.Add((family, bold), new(face));
                 }
         }
         catch { Dispose(); throw; }
@@ -57,7 +60,7 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
         {
             string element = elements.GetTextElement();
             var selected = candidates.FirstOrDefault(candidate => element.EnumerateRunes().All(r =>
-                IsLayoutControl(r) || _faces[(candidate, bold)].GetGlyph(r.Value) != 0));
+                IsLayoutControl(r) || GetFont(candidate, bold).GetGlyph(r.Value) != 0));
             if (selected is null)
                 throw new InvalidOperationException($"Bundled Noto fonts do not cover text element: {element}");
             if (current != selected && run.Length > 0)
@@ -71,12 +74,16 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
         if (run.Length > 0) yield return (run.ToString(), current!);
     }
 
+    private SKFont GetFont(string family, bool bold) => _fonts[(family, bold)];
+
     private static bool IsLayoutControl(Rune rune) => Rune.GetUnicodeCategory(rune) is
         UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator;
 
     /// <summary>所有するネイティブフォントを解放します。</summary>
     public void Dispose()
     {
+        foreach (var font in _fonts.Values) font.Dispose();
+        _fonts.Clear();
         foreach (var face in _faces.Values) face.Dispose();
         _faces.Clear();
     }

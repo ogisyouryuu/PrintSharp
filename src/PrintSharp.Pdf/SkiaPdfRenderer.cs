@@ -162,7 +162,7 @@ public sealed class SkiaPdfRenderer
         var content = Scale(layout.ContentBounds, scale);
         if (content.Width <= 0 || content.Height <= 0) return;
         using var image = SKImage.FromEncodedData(bytes) ?? throw new InvalidDataException("Unsupported cell image.");
-        using var imagePaint = new SKPaint { FilterQuality = SKFilterQuality.High, IsAntialias = true };
+        using var imagePaint = new SKPaint { IsAntialias = true };
         canvas.DrawImage(image, new SKRect(content.X, content.Y, content.Right, content.Bottom), imagePaint);
     }
 

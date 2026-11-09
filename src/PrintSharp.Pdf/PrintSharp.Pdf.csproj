@@ -29,11 +29,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="7.3.0.3" />
-		<PackageReference Include="SkiaSharp.HarfBuzz" Version="2.88.9" />
-		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
-		<PackageReference Include="Topten.RichTextKit" Version="0.4.167" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="all" />
+		<PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0" />
+		<PackageReference Include="SkiaSharp.HarfBuzz" Version="4.155.0" />
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.155.0" />
+		<PackageReference Include="Topten.RichTextKit" Version="0.6.170" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.403" PrivateAssets="all" />
 	</ItemGroup>
 
 	<ItemGroup>

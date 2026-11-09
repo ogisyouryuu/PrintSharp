@@ -69,7 +69,7 @@ Nginx 已限制 API 请求速率和请求体大小。API 暂无内置身份认�
 
 生产项目及测试项目均已移除 PDFsharp；PDF 写入由 SkiaSharp 完成。用于独立读取验证的 PdfPig（Apache-2.0）仅为测试依赖，不随 API 发布。
 
-新增文字链路采用 RichTextKit 0.4.167（Apache-2.0）、SkiaSharp / HarfBuzzSharp（MIT，原生组件另附第三方声明）、HarfBuzz（Old MIT）、Noto（SIL OFL 1.1）。这些许可允许免费商业和闭源使用，但分发时仍需保留相应版权、许可及第三方声明；OFL 不要求嵌入字体的报表使用 OFL。发布目录保留 `Fonts/OFL-*.txt` 和 `Licenses/`。详见其中的来源清单与原始许可文本。
+新增文字链路采用 RichTextKit 0.6.170（Apache-2.0）、SkiaSharp 4.155.0 / HarfBuzzSharp 14.4.0（MIT，原生组件另附第三方声明）、HarfBuzz（Old MIT）、Noto（SIL OFL 1.1）。这些许可允许免费商业和闭源使用，但分发时仍需保留相应版权、许可及第三方声明；OFL 不要求嵌入字体的报表使用 OFL。发布目录保留 `Fonts/OFL-*.txt` 和 `Licenses/`。详见其中的来源清单与原始许可文本。
 
 ## Canvas 预览 API
 

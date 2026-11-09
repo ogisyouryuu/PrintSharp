@@ -103,8 +103,12 @@ public sealed class PreviewDocument
                 case "image":
                     using (var image = SKImage.FromEncodedData(Convert.FromBase64String(Resources[command.ResourceId!].Data)))
                     {
-                        paint.FilterQuality = SKFilterQuality.High;
-                        canvas.DrawImage(image, SKRect.Create(v![0], v[1], v[2], v[3]), paint);
+                        var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
+                        canvas.Save();
+                        canvas.Translate(v![0], v[1]);
+                        canvas.Scale(v[2] / image.Width, v[3] / image.Height);
+                        canvas.DrawImage(image, 0, 0, sampling, paint);
+                        canvas.Restore();
                     }
                     break;
                 case "glyphRun":

@@ -4,6 +4,7 @@ using System.Text.Json;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc.Testing;
 using PrintSharp.Pdf;
+using SkiaSharp;
 using Topten.RichTextKit;
 using Xunit;
 
@@ -39,8 +40,9 @@ public sealed class MultilingualPdfTests : IClassFixture<WebApplicationFactory<P
         var arabicStyle = new Style { FontFamily = "NotoSansArabic", FontWeight = bold ? 700 : 400 };
         ligature.AddText("لا", arabicStyle);
         var face = fonts.TypefaceFromStyle(arabicStyle, false);
+        using var font = new SKFont(face);
         Assert.Contains(ligature.FontRuns.SelectMany(r => r.Glyphs.ToArray()),
-            glyph => glyph != face.GetGlyph('ل') && glyph != face.GetGlyph('ا'));
+            glyph => glyph != font.GetGlyph('ل') && glyph != font.GetGlyph('ا'));
     }
 
     [Fact]
