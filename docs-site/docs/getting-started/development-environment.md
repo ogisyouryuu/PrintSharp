@@ -1,10 +1,10 @@
 # 开发环境
 
-仓库项目使用 .NET 10。CI 工作流安装 .NET SDK 10.0.401；项目目标框架为 `net10.0`，Windows 项目为 `net10.0-windows`，Source Generator 为 `netstandard2.0`。仓库未使用 `global.json` 固定本机 SDK 补丁版本。
+仓库项目使用 .NET 11。CI 工作流安装 .NET SDK 11.0.100；项目目标框架为 `net11.0`，Windows 项目为 `net11.0-windows`，Source Generator 为 `netstandard2.0`。仓库未使用 `global.json` 固定本机 SDK 补丁版本。
 
 ## 所需工具
 
-- .NET 10 SDK：用于还原、构建和运行测试。
+- .NET 11 SDK：用于还原、构建和运行测试。
 - Windows：构建 `PrintSharp.Windows`、WinForms 示例及整个当前解决方案时需要 Windows Desktop targeting/runtime。
 - Node.js 22 或更高版本与 npm：仅在开发、构建文档门户时需要；门户不属于 .NET 运行时依赖。
 - Git：获取源码和查看工作区变更。

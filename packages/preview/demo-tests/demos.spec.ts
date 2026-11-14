@@ -106,6 +106,7 @@ for (const [name, port] of [['vue', 5199], ['blazor', Number(process.env.PREVIEW
     await expect(page.getByTestId('selection-summary')).toContainText('Updated / 更新 / العربية');
     await page.getByRole('button', { name: '复制', exact: true }).click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Updated / 更新 / العربية');
+    await expect(page.locator('.copy-status')).toHaveText('已复制：Updated / 更新 / العربية');
     await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-selection.png`, import.meta.url)), fullPage: true });
     await page.getByRole('button', { name: '文字选择', exact: true }).click();
     await expect(page.locator('.text-layer')).toBeHidden();

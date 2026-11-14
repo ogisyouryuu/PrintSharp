@@ -19,6 +19,8 @@ npm ci
 
 升级 VitePress 等依赖时使用 `npm install`，确认变更后提交 `package.json` 和 `package-lock.json`。
 
+Vite override 使用 6.4.6（6.x 最新稳定补丁）。当前稳定版 VitePress 1.6.4 的构建插件与 Vite 8 的 Rolldown 不兼容，待 VitePress 支持后再升级主版本。
+
 ## 本地开发
 
 ```powershell

@@ -101,7 +101,9 @@ public sealed class PreviewDocument
                 case "fillRect": canvas.DrawRect(v![0], v[1], v[2], v[3], paint); break;
                 case "line": canvas.DrawLine(v![0], v[1], v[2], v[3], paint); break;
                 case "image":
-                    using (var image = SKImage.FromEncodedData(Convert.FromBase64String(Resources[command.ResourceId!].Data)))
+                    // Skia 156 の PDF 描画で遅延デコード画像がクラッシュするため、先に PNG をデコードします。
+                    using (var bitmap = SKBitmap.Decode(Convert.FromBase64String(Resources[command.ResourceId!].Data)))
+                    using (var image = SKImage.FromBitmap(bitmap))
                     {
                         var sampling = new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear);
                         canvas.Save();

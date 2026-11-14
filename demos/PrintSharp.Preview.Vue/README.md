@@ -2,6 +2,8 @@
 
 独立的 Vue 3 + TypeScript + Vite 项目，通过本地 `@printsharp/preview/vue` 组件调用真实 PrintSharp.Api。支持内置两页样例、自定义 Excel 上传、JSON 编辑、页码双向绑定、缩放和同快照 PDF 下载。
 
+TypeScript 保持在 6.0.3：当前稳定版 vue-tsc 3.3.14 依赖 TypeScript 的 `lib/tsc` 入口，与 TypeScript 7 不兼容。待 vue-tsc 支持后再升级主版本。
+
 ## 启动
 
 以下命令都从仓库根目录执行。先启动 API：

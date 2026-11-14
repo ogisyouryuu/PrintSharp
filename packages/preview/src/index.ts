@@ -166,7 +166,7 @@ const styles = `
 *{box-sizing:border-box}[hidden]{display:none!important}.preview{position:relative;height:100%;display:flex;flex-direction:column;background:var(--printsharp-background,#e8ebf0);border:1px solid #cbd1db;border-radius:6px;overflow:hidden}
 .toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px;background:var(--printsharp-toolbar,#fff);border-bottom:1px solid #cbd1db}
 button,input{font:inherit;color:inherit;border:1px solid #cbd1db;border-radius:4px;padding:5px 8px;background:#fff}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}input{width:65px}
-.preview-content{display:flex;flex:1;min-height:0;overflow:hidden}.thumbnail-sidebar{width:164px;max-width:40%;flex-shrink:0;overflow:auto;background:var(--printsharp-toolbar,#fff);border-right:1px solid #cbd1db;scrollbar-gutter:stable;overflow-anchor:none}.thumbnail{display:flex;align-items:center;justify-content:center;padding:4px 4px 24px;background:#f3f5f9}.thumbnail[aria-current="page"]{border:2px solid #376ad6;background:#eaf0ff}.thumbnail canvas{display:block;box-shadow:0 1px 4px #0002}.thumbnail-number{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:12px}.thumbnail-placeholder{color:#758096}.thumbnail[data-state="error"]{border-style:dashed}.viewport{flex:1;min-width:0;min-height:0;overflow:auto;scrollbar-gutter:stable;overflow-anchor:none;padding:16px;text-align:center;position:relative}.page{display:block;margin:auto;box-shadow:0 2px 10px #0002;background:white}.status{position:absolute;bottom:8px;left:8px;right:8px;z-index:1;padding:8px;background:#fff;overflow-wrap:anywhere}.status:empty{display:none}button:focus-visible,input:focus-visible,.viewport:focus-visible{outline:2px solid #376ad6;outline-offset:2px}
+.preview-content{display:flex;flex:1;min-height:0;overflow:hidden}.thumbnail-sidebar{width:164px;max-width:40%;flex-shrink:0;overflow:auto;background:var(--printsharp-toolbar,#fff);border-right:1px solid #cbd1db;scrollbar-gutter:stable;overflow-anchor:none}.thumbnail{display:flex;align-items:center;justify-content:center;padding:4px 4px 24px;background:#f3f5f9}.thumbnail[aria-current="page"]{border:2px solid #376ad6;background:#eaf0ff}.thumbnail canvas{display:block;box-shadow:0 1px 4px #0002}.thumbnail-number{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:12px}.thumbnail-placeholder{color:#758096}.thumbnail[data-state="error"]{border-style:dashed}.viewport{flex:1;min-width:0;min-height:0;overflow:auto;scrollbar-gutter:stable;overflow-anchor:none;padding:16px;text-align:center;position:relative}.page{display:block;margin:auto;box-shadow:0 2px 10px #0002;background:white}.status,.copy-status{position:absolute;bottom:8px;left:8px;right:8px;z-index:1;padding:8px;background:#fff;overflow-wrap:anywhere}.status:empty,.copy-status:empty{display:none}button:focus-visible,input:focus-visible,.viewport:focus-visible{outline:2px solid #376ad6;outline-offset:2px}
 `;
 
 /** フレームワークに依存しないページプレビューコントロールです。 */
@@ -184,6 +184,8 @@ export class PrintPreview extends EventTarget {
   private readonly viewport: HTMLDivElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly status: HTMLDivElement;
+  private readonly copyStatus: HTMLDivElement;
+  private copyStatusTimer?: ReturnType<typeof setTimeout>;
   private readonly pageInput: HTMLInputElement;
   private readonly total: HTMLSpanElement;
   private readonly zoomLabel: HTMLSpanElement;
@@ -248,6 +250,9 @@ export class PrintPreview extends EventTarget {
     action('search', () => this.searchPanel.toggle());
     action('retry', () => { void this.retry().catch(() => {}); });
     this.status = document.createElement('div'); this.status.className = 'status'; this.status.setAttribute('role', 'status'); this.status.setAttribute('aria-live', 'polite'); shell.append(this.status);
+    this.copyStatus = document.createElement('div'); this.copyStatus.className = 'copy-status';
+    this.copyStatus.setAttribute('role', 'status'); this.copyStatus.setAttribute('aria-live', 'polite'); this.copyStatus.setAttribute('aria-atomic', 'true');
+    this.copyStatus.style.cssText = 'max-height:120px;overflow:auto;white-space:pre-wrap;user-select:text'; shell.append(this.copyStatus);
     const content = document.createElement('div'); content.className = 'preview-content'; shell.append(content);
     this.sidebarHost = document.createElement('aside'); this.sidebarHost.className = 'thumbnail-sidebar';
     this.sidebarHost.setAttribute('aria-label', '页面缩略图'); this.sidebarHost.hidden = !this.thumbnailsOpen; content.append(this.sidebarHost);
@@ -256,7 +261,7 @@ export class PrintPreview extends EventTarget {
     const searchHost = document.createElement('div'); shell.insertBefore(searchHost, content);
     this.searchPanel = new PreviewSearch({ host: searchHost, viewport: this.viewport, manifest: () => this.manifest,
       ready: () => this.ready, load: options.source.getTextIndex?.bind(options.source), navigate: page => this.goToPage(page), changed: state => this.emit('searchchange', state) });
-    this.selectionLayer = new TextSelectionLayer(this.viewport, text => { this.emit('selectionchange', text); });
+    this.selectionLayer = new TextSelectionLayer(this.viewport, text => { this.emit('selectionchange', text); }, text => this.showCopyStatus(`已复制：${text}`));
     this.selectionLayer.setEnabled(this.selectionEnabled);
     this.viewport.addEventListener('keydown', event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -284,7 +289,20 @@ export class PrintPreview extends EventTarget {
   }
   get textSelection(): boolean { return this.selectionEnabled; }
   get selectedText(): string { return this.selectionLayer.selectedText; }
-  copySelection(): Promise<void> { this.assertAlive(); return this.selectionLayer.copy(); }
+  async copySelection(): Promise<void> {
+    this.assertAlive();
+    this.copyStatus.textContent = '';
+    clearTimeout(this.copyStatusTimer);
+    if (!this.selectedText) { this.showCopyStatus('请先选择要复制的文字'); return; }
+    await this.selectionLayer.copy();
+  }
+  private showCopyStatus(message: string): void {
+    if (this.destroyed) return;
+    clearTimeout(this.copyStatusTimer);
+    // コピー結果は描画状態と分離し、ページや選択範囲を移動させません。
+    this.copyStatus.textContent = message;
+    this.copyStatusTimer = setTimeout(() => { this.copyStatus.textContent = ''; }, 5000);
+  }
   clearSelection(): void { this.assertAlive(); this.selectionLayer.clear(); }
   setTextSelection(enabled: boolean): void { this.assertAlive(); this.selectionEnabled = enabled; this.selectionLayer.setEnabled(enabled); this.updateControls(); this.emit('textselectionchange', enabled); }
   get searchState() { return this.searchPanel.state; }
@@ -470,7 +488,7 @@ export class PrintPreview extends EventTarget {
   }
   destroy(): void {
     if (this.destroyed) return;
-    this.destroyed = true; this.searchPanel.destroy(); this.selectionLayer.destroy(); this.sequence++; this.manifestAbort.abort(); this.active?.abort();
+    this.destroyed = true; clearTimeout(this.copyStatusTimer); this.searchPanel.destroy(); this.selectionLayer.destroy(); this.sequence++; this.manifestAbort.abort(); this.active?.abort();
     this.sidebar?.destroy(); this.sidebar = undefined;
     this.continuous?.destroy(); this.continuous = undefined;
     this.observer.disconnect(); this.removalObserver.disconnect(); clearTimeout(this.resizeTimer);

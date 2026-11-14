@@ -2,6 +2,7 @@
 export class TextSelectionLayer {
     viewport;
     changed;
+    copied;
     entries = new Map();
     measure = document.createElement('canvas').getContext('2d');
     lastText = '';
@@ -81,11 +82,13 @@ export class TextSelectionLayer {
         if (text && event.clipboardData) {
             event.preventDefault();
             event.clipboardData.setData('text/plain', text);
+            this.copied(text);
         }
     };
-    constructor(viewport, changed) {
+    constructor(viewport, changed, copied = () => { }) {
         this.viewport = viewport;
         this.changed = changed;
+        this.copied = copied;
         document.addEventListener('selectionchange', this.onChange);
         document.addEventListener('copy', this.onCopy);
         viewport.addEventListener('pointerdown', this.onPointerDown);
@@ -145,6 +148,7 @@ export class TextSelectionLayer {
         if (!navigator.clipboard?.writeText)
             throw new Error('当前环境无法访问剪贴板，请使用 Ctrl+C / Command+C');
         await navigator.clipboard.writeText(text);
+        this.copied(text);
     }
     setEnabled(enabled) {
         if (enabled === this.enabled)

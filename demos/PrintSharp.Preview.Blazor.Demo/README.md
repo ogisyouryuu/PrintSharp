@@ -1,6 +1,6 @@
 # Blazor Preview Demo
 
-独立的 .NET 10 Blazor Interactive Server 项目，引用 `PrintSharp.Preview.Blazor` RCL。不是静态 HTML 包装：上传由 Razor 的 `InputFile` 接收，服务器向真实 PrintSharp.Api 创建快照，浏览器控件通过同源转发获取页面，页码事件回传 Razor 状态。
+独立的 .NET 11 Blazor Interactive Server 项目，引用 `PrintSharp.Preview.Blazor` RCL。不是静态 HTML 包装：上传由 Razor 的 `InputFile` 接收，服务器向真实 PrintSharp.Api 创建快照，浏览器控件通过同源转发获取页面，页码事件回传 Razor 状态。
 
 ## 启动
 

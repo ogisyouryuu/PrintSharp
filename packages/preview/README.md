@@ -24,7 +24,7 @@ await preview.ready;
 
 Give the container a fixed height. Call `destroy()` when finished; server sessions expire separately or can be deleted explicitly. Vue consumers import `PrintSharpPreview` from `@printsharp/preview/vue`. Blazor uses the `PrintSharp.Preview.Blazor` project; `npm run build` updates its bundled JS.
 
-Run `npx playwright install chromium` once, then `npm test`. Tests require .NET 10 to generate the multilingual fixture.
+Run `npx playwright install chromium` once, then `npm test`. Tests require .NET 11 to generate the multilingual fixture.
 
 See the [complete integration guide](../../doc/canvas-preview.zh-CN.md) for HTTP routes, protocol, Vue, Blazor, authentication, lifecycle, limits, and validation scope. Distributed server caching is not implemented in this version.
 

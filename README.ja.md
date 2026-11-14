@@ -4,7 +4,7 @@
 
 **.NET 向け Grid-first ドキュメント生成ライブラリ**
 
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET 11](https://img.shields.io/badge/.NET-11.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
 [![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
 [![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
@@ -89,7 +89,7 @@ dotnet add package PrintSharp.Pdf
 dotnet add package PrintSharp.Windows
 ```
 
-`PrintSharp.Windows` は Windows を対象とし、Windows Forms / `PrintDocument` を使用します。コア、Excel、PDF プロジェクトは .NET 10 を対象としています。
+`PrintSharp.Windows` は Windows を対象とし、Windows Forms / `PrintDocument` を使用します。コア、Excel、PDF プロジェクトは .NET 11 を対象としています。
 
 ## クイックスタート
 

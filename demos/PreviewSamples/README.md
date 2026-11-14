@@ -8,4 +8,4 @@
 dotnet run --file demos/PreviewSamples/Generate.cs
 ```
 
-生成器使用 .NET 10 文件型应用及与仓库相同的 ClosedXML 版本。两页来自两个工作表，用于稳定验证翻页；核心自动分页另由 .NET 测试覆盖。
+生成器使用 .NET 11 文件型应用及与仓库相同的 ClosedXML 版本。两页来自两个工作表，用于稳定验证翻页；核心自动分页另由 .NET 测试覆盖。

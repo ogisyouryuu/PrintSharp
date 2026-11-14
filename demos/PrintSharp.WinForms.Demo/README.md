@@ -1,6 +1,6 @@
 # PrintSharp WinForms Demo
 
-基于 .NET 10 Windows Forms，引用仓库内的 PrintSharp.Excel、PrintSharp.Pdf 和 PrintSharp.Windows。
+基于 .NET 11 Windows Forms，引用仓库内的 PrintSharp.Excel、PrintSharp.Pdf 和 PrintSharp.Windows。
 
 ## 运行
 
@@ -10,7 +10,7 @@
 dotnet run --project demos/PrintSharp.WinForms.Demo
 ```
 
-也可以在 Visual Studio 中将 `PrintSharp.WinForms.Demo` 设置为启动项目。需要 .NET 10 SDK、Windows，以及可用的 Windows 打印机驱动（例如 Microsoft Print to PDF）。PDF 使用随包携带的 Noto 字体；Windows 原生打印仍使用模板指定的系统字体。
+也可以在 Visual Studio 中将 `PrintSharp.WinForms.Demo` 设置为启动项目。需要 .NET 11 SDK、Windows，以及可用的 Windows 打印机驱动（例如 Microsoft Print to PDF）。PDF 使用随包携带的 Noto 字体；Windows 原生打印仍使用模板指定的系统字体。
 
 ## 操作
 

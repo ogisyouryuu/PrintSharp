@@ -4,7 +4,7 @@
 
 **面向 .NET 的 Grid-first 文档生成库**
 
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET 11](https://img.shields.io/badge/.NET-11.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
 [![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
 [![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
@@ -89,7 +89,7 @@ dotnet add package PrintSharp.Pdf
 dotnet add package PrintSharp.Windows
 ```
 
-`PrintSharp.Windows` 面向 Windows，使用 Windows Forms / `PrintDocument`；核心、Excel 和 PDF 项目面向 .NET 10。
+`PrintSharp.Windows` 面向 Windows，使用 Windows Forms / `PrintDocument`；核心、Excel 和 PDF 项目面向 .NET 11。
 
 ## 快速开始
 

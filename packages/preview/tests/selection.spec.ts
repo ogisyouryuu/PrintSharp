@@ -40,8 +40,10 @@ test('native drag selects text; copy preserves multilingual logical order and or
   const expected = await page.evaluate(() => (window as any).fixture.page.textRegions[0].text);
   expect(await page.evaluate(() => (window as any).preview.selectedText)).toBe(expected);
   await page.keyboard.press('Control+c');
+  await expect(page.locator('.copy-status')).toHaveText(`已复制：${expected}`);
   expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(expected);
   await page.getByRole('button', {name:'复制',exact:true}).click();
+  await expect(page.locator('.copy-status')).toHaveText(`已复制：${expected}`);
   expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(expected);
   await selectRegion(page, 1);
   expect(await page.evaluate(() => (window as any).preview.selectedText)).toBe(await page.evaluate(() => (window as any).fixture.page.textRegions[1].text));
@@ -51,6 +53,24 @@ test('native drag selects text; copy preserves multilingual logical order and or
   await expect(page.locator('.text-layer')).toBeHidden();
   expect(await page.evaluate(() => (window as any).preview.selectedText)).toBe('');
 });
+test('copy feedback handles empty selection, expires, and never reports failed writes as successful', async ({page, context}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await setup(page);
+  await page.getByRole('button', {name:'复制',exact:true}).click();
+  await expect(page.locator('.copy-status')).toHaveText('请先选择要复制的文字');
+  await selectRegion(page);
+  await page.getByRole('button', {name:'复制',exact:true}).click();
+  await expect(page.locator('.copy-status')).toContainText('已复制：');
+  await expect(page.locator('.copy-status')).toBeHidden({timeout: 7000});
+  await selectRegion(page);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', { configurable: true, value: async () => { throw new Error('Clipboard permission denied'); } });
+  });
+  await page.getByRole('button', {name:'复制',exact:true}).click();
+  await expect(page.locator('.status:not(.copy-status)')).toHaveText('Clipboard permission denied');
+  await expect(page.locator('.copy-status')).toBeHidden();
+});
+
 test('selection geometry scales, search uses boxes, virtualization releases text and old sources still render', async ({page}) => {
   await setup(page, 'continuous');
   await expect(page.locator('.text-layer').first()).toBeVisible();

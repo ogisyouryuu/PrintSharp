@@ -27,7 +27,7 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 11.0.100
       - name: Validate release tag
         id: version
         shell: pwsh

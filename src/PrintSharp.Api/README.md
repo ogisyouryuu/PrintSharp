@@ -1,6 +1,6 @@
 # PrintSharp.Api
 
-独立的 .NET 10 ASP.NET Core HTTP 服务。协议、校验和资源限制都放在本项目中；引用现有 PrintSharp.Excel / PrintSharp.Pdf，不改动核心公共 API。
+独立的 .NET 11 ASP.NET Core HTTP 服务。协议、校验和资源限制都放在本项目中；引用现有 PrintSharp.Excel / PrintSharp.Pdf，不改动核心公共 API。
 
 ## 运行
 
@@ -63,7 +63,7 @@ chmod +x PrintSharp.Api
 
 Nginx 已限制 API 请求速率和请求体大小。API 暂无内置身份认证，生成接口可被公网访问；若业务数据只应由受限用户提交，应增加 API Key 或其他身份认证。
 
-仓库根目录提供 `bash eng/verify-multilingual-pdf.sh`，用于在装有 .NET 10 SDK、上述运行依赖和 `poppler-utils` 的 Rocky 主机上发布、启动本机 API、发送真实请求及检查 PDF 字体/图像。验证记录见 `doc/multilingual-pdf-validation.md`。
+仓库根目录提供 `bash eng/verify-multilingual-pdf.sh`，用于在装有 .NET 11 SDK、上述运行依赖和 `poppler-utils` 的 Rocky 主机上发布、启动本机 API、发送真实请求及检查 PDF 字体/图像。验证记录见 `doc/multilingual-pdf-validation.md`。
 
 ### 免费商用与闭源许可
 
@@ -175,7 +175,7 @@ curl.exe --fail-with-body -X POST http://127.0.0.1:5080/api/v1/print/excel -H "C
 
 ## C# HttpClient 客户端示例
 
-以下代码可放入 .NET 10 控制台项目的 `Program.cs`，不需要引用 PrintSharp 服务端项目或安装额外 NuGet 包。准备 `invoice.xlsx`，其中一个单元格填写 `{{Invoice.TotalAmount}}`；文件路径相对于客户端运行目录。
+以下代码可放入 .NET 11 控制台项目的 `Program.cs`，不需要引用 PrintSharp 服务端项目或安装额外 NuGet 包。准备 `invoice.xlsx`，其中一个单元格填写 `{{Invoice.TotalAmount}}`；文件路径相对于客户端运行目录。
 
 示例分别调用文件上传和原有 Base64 接口生成 PDF、Excel。业务数据结构相同，上传时 `data` 部分只发送数据集 JSON，Base64 时则包装成 `template` + `data` 请求。
 

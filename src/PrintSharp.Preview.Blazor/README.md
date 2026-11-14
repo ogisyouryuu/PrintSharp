@@ -1,6 +1,6 @@
 # PrintSharp.Preview.Blazor
 
-Blazor RCL wrapper for the shared TypeScript Canvas preview. Reference this project from an interactive Blazor application; it targets .NET 10.
+Blazor RCL wrapper for the shared TypeScript Canvas preview. Reference this project from an interactive Blazor application; it targets .NET 11.
 
 ```razor
 @using PrintSharp.Preview.Blazor

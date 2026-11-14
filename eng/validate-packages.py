@@ -9,10 +9,10 @@ import zipfile
 package_dir = pathlib.Path(sys.argv[1]).resolve()
 version = sys.argv[2]
 expected = {
-    "PrintSharp": "net10.0",
-    "PrintSharp.Excel": "net10.0",
-    "PrintSharp.Pdf": "net10.0",
-    "PrintSharp.Windows": "net10.0-windows",
+    "PrintSharp": "net11.0",
+    "PrintSharp.Excel": "net11.0",
+    "PrintSharp.Pdf": "net11.0",
+    "PrintSharp.Windows": "net11.0-windows",
 }
 packages = sorted(package_dir.glob("*.nupkg"))
 if len(packages) != len(expected):
@@ -58,7 +58,7 @@ with tempfile.TemporaryDirectory(prefix="printsharp-consumer-") as temp:
     )
     (project / "Consumer.csproj").write_text(
         "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup>"
-        "<OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework>"
+        "<OutputType>Exe</OutputType><TargetFramework>net11.0-windows</TargetFramework>"
         "<EnableWindowsTargeting>true</EnableWindowsTargeting><ImplicitUsings>enable</ImplicitUsings>"
         "<Nullable>enable</Nullable></PropertyGroup><ItemGroup>"
         f"{references}</ItemGroup></Project>",

@@ -59,9 +59,9 @@ export class TextSelectionLayer {
   private readonly onChange = () => { const text = this.selectedText; if (text !== this.lastText) { this.lastText = text; this.changed(text); } };
   private readonly onCopy = (event: ClipboardEvent) => {
     const text = this.selectedText;
-    if (text && event.clipboardData) { event.preventDefault(); event.clipboardData.setData('text/plain', text); }
+    if (text && event.clipboardData) { event.preventDefault(); event.clipboardData.setData('text/plain', text); this.copied(text); }
   };
-  constructor(private readonly viewport: HTMLElement, private readonly changed: (text: string) => void) {
+  constructor(private readonly viewport: HTMLElement, private readonly changed: (text: string) => void, private readonly copied: (text: string) => void = () => {}) {
     document.addEventListener('selectionchange', this.onChange);
     document.addEventListener('copy', this.onCopy);
     viewport.addEventListener('pointerdown', this.onPointerDown);
@@ -108,6 +108,7 @@ export class TextSelectionLayer {
     if (!text) return;
     if (!navigator.clipboard?.writeText) throw new Error('当前环境无法访问剪贴板，请使用 Ctrl+C / Command+C');
     await navigator.clipboard.writeText(text);
+    this.copied(text);
   }
   setEnabled(enabled: boolean): void {
     if (enabled === this.enabled) return;

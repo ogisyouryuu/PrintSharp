@@ -4,7 +4,7 @@
 
 ## 建议阅读顺序
 
-1. 阅读[开发环境](/getting-started/development-environment)，确认安装 .NET 10 SDK 和 Git。
+1. 阅读[开发环境](/getting-started/development-environment)，确认安装 .NET 11 SDK 和 Git。
 2. 查看[项目结构](/getting-started/project-structure)，找到 Core、Excel、PDF、Windows 和 API 项目。
 3. 按[构建与测试](/getting-started/build-and-test)恢复依赖、构建解决方案并运行测试。
 4. 再阅读[系统概览](/architecture/system-overview)，了解组件边界和当前 API 路由。
