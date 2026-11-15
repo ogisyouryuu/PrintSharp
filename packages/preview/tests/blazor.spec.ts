@@ -4,7 +4,7 @@ test('Blazor bridge exposes external controls, localized labels and authenticate
   await page.goto('http://127.0.0.1:5197');
   await page.route('**/previews/demo**', async route => {
     expect(route.request().headers()['authorization']).toBe('Bearer demo');
-    const pageNumber = Number(route.request().url().split('/').at(-1));
+    const pageNumber = Number(new URL(route.request().url()).pathname.split('/').at(-1));
     const body = pageNumber ? {
       documentId: 'demo', revision: '1', resources: {},
       page: { schemaVersion: 1, unit: 'pt', pageNumber, width: 400, height: 300, commands: [] }

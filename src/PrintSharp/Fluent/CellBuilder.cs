@@ -84,8 +84,17 @@ public sealed class CellBuilder
     }
 
     /// <summary>
-    /// 设置公式字符串（如 "=SUM(A1:A10)"）。
+    /// 数式と計算済みの値を設定します。値には PageValue も指定できます。
     /// </summary>
+    public CellBuilder Formula(string formula, object? value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(formula);
+        _value = new FormulaValue(formula, value);
+        _type = CellType.Formula;
+        return this;
+    }
+
+    /// <summary>計算済みの値を持たない数式を設定します。</summary>
     public CellBuilder Formula(string formula)
     {
         _value = formula;

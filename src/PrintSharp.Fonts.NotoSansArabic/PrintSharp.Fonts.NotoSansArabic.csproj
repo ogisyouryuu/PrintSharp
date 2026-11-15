@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework><PackageId>PrintSharp.Fonts.NotoSansArabic</PackageId>
+    <Authors>ogisyouryuu</Authors><Description>Optional Noto font assets for PrintSharp: NotoSansArabic.</Description>
+    <PackageLicenseExpression>OFL-1.1</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl><RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="buildTransitive/PrintSharp.Fonts.NotoSansArabic.targets" Pack="true" PackagePath="buildTransitive/" />
+    <Content Include="../PrintSharp.Pdf/Fonts/NotoSansArabic-*.ttf" Link="Fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Fonts/" />
+    <Content Include="../PrintSharp.Pdf/Fonts/OFL-Noto.txt" Link="Fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Fonts/" />
+  </ItemGroup>
+</Project>

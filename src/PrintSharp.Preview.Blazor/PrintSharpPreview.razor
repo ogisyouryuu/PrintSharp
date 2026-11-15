@@ -9,6 +9,7 @@
 @code {
     [Parameter, EditorRequired] public string DocumentId { get; set; } = "";
     [Parameter] public string BaseUrl { get; set; } = "/api/previews";
+    [Parameter] public bool DeleteOnDispose { get; set; }
     [Parameter] public bool Toolbar { get; set; } = true;
     [Parameter] public int Page { get; set; } = 1;
     [Parameter] public double Zoom { get; set; }
@@ -16,7 +17,7 @@
     [Parameter] public EventCallback<int> PageCountChanged { get; set; }
     [Parameter] public EventCallback<bool> LoadingChanged { get; set; }
     [Parameter] public EventCallback Ready { get; set; }
-    [Parameter] public Dictionary<string, string>? Labels { get; set; }
+    [Parameter] public PreviewLabels? Labels { get; set; }
     [Parameter] public Dictionary<string, string>? RequestHeaders { get; set; }
     [Parameter] public string Credentials { get; set; } = "same-origin";
     private int _currentPage = 1;
@@ -58,7 +59,7 @@
                 _loaded = null;
                 return;
             }
-            var configuration = System.Text.Json.JsonSerializer.Serialize(new { Toolbar, Labels, RequestHeaders, Credentials });
+            var configuration = System.Text.Json.JsonSerializer.Serialize(new { Toolbar, Labels, RequestHeaders, Credentials, DeleteOnDispose });
             if (_loaded == (BaseUrl, DocumentId, InitialPage) && _configuration == configuration)
             {
                 if (_preview is not null && _loadedMode != ViewMode) { await _preview.InvokeVoidAsync("setViewMode", ViewMode); _loadedMode = ViewMode; }
@@ -72,12 +73,12 @@
             if (_disposed) { await _module.DisposeAsync(); return; }
             if (_preview is not null)
             {
-                await _preview.InvokeVoidAsync("destroy");
+                await _preview.InvokeVoidAsync("destroy", _loaded?.Item1 != BaseUrl || _loaded?.Item2 != DocumentId);
                 await _preview.DisposeAsync();
             }
             _callback?.Dispose();
             _callback = DotNetObjectReference.Create(this);
-            _preview = await _module.InvokeAsync<IJSObjectReference>("mountBlazor", _container, BaseUrl, DocumentId, Page != 1 ? Page : InitialPage, Zoom > 0 ? (object)Zoom : "fit-width", _callback, ViewMode, Thumbnails, TextSelection, Toolbar, Labels, RequestHeaders, Credentials);
+            _preview = await _module.InvokeAsync<IJSObjectReference>("mountBlazor", _container, BaseUrl, DocumentId, Page != 1 ? Page : InitialPage, Zoom > 0 ? (object)Zoom : "fit-width", _callback, ViewMode, Thumbnails, TextSelection, Toolbar, Labels, RequestHeaders, Credentials, DeleteOnDispose);
             if (_disposed)
             {
                 await _preview.InvokeVoidAsync("destroy");
@@ -115,7 +116,7 @@
     [JSInvokable] public Task OnReady() => Ready.InvokeAsync();
     public Task ZoomInAsync() => InvokePreviewAsync("zoomIn");
     public Task ZoomOutAsync() => InvokePreviewAsync("zoomOut");
-    public string GetPdfUrl() => $"{BaseUrl.TrimEnd('/')}/{Uri.EscapeDataString(DocumentId)}/pdf";
+    public string GetPdfUrl(string? filename = null) => $"{BaseUrl.TrimEnd('/')}/{Uri.EscapeDataString(DocumentId)}/pdf" + (filename is null ? "" : "?filename=" + Uri.EscapeDataString(filename));
     [JSInvokable] public Task OnPreviewError(string message) => Error.InvokeAsync(message);
     public Task SetThumbnailsVisibleAsync(bool visible) => InvokePreviewAsync("setThumbnailsVisible", visible);
     public Task SetViewModeAsync(string mode) => InvokePreviewAsync("setViewMode", mode);

@@ -1,6 +1,6 @@
 import { resolveLabels } from './labels.js';
 import type { PreviewLabels } from './labels.js';
-export { zhCN, en, ja } from './labels.js';
+export { zhCN, zhTW, ko, en, ja } from './labels.js';
 export type { PreviewLabels } from './labels.js';
 import { TextSelectionLayer } from './selection.js';
 import { PreviewSearch, type TextIndex, type TextRegion } from './search.js';
@@ -26,6 +26,7 @@ export interface PageResponse {
   documentId: string; revision: string; page: DisplayPage; resources: Record<string, Resource>;
 }
 export interface PreviewSource {
+  dispose?(deleteSession?: boolean): void;
   getTextIndex?(signal: AbortSignal): Promise<TextIndex>;
   getManifest(signal: AbortSignal): Promise<Manifest>;
   getPage(pageNumber: number, signal: AbortSignal): Promise<PageResponse>;
@@ -36,6 +37,8 @@ export class PreviewError extends Error {
 export interface HttpSourceOptions {
   baseUrl: string; documentId: string;
   fetch?: typeof fetch;
+  deleteOnDispose?: boolean;
+  maxResourceCacheBytes?: number;
   requestInit?: Omit<RequestInit, 'signal' | 'method' | 'body'>;
 }
 export function createHttpPreviewSource(options: HttpSourceOptions): PreviewSource {
@@ -50,7 +53,60 @@ export function createHttpPreviewSource(options: HttpSourceOptions): PreviewSour
     }
     return response.json() as Promise<T>;
   }
-  return { getTextIndex: signal => get('/text', signal), getManifest: signal => get('', signal), getPage: (page, signal) => get(`/pages/${page}`, signal) };
+  const resources = new Map<string, Resource>();
+  let resourceBytes = 0;
+  let revision: string | undefined;
+  let disposed = false;
+  const limit = options.maxResourceCacheBytes ?? 16 * 1024 * 1024;
+  return {
+    async getManifest(signal) {
+      const manifest = await get<Manifest & { schemaVersion: number }>('?schemaVersion=2', signal);
+      if (revision !== manifest.revision) { resources.clear(); resourceBytes = 0; revision = manifest.revision; }
+      if (Number(manifest.schemaVersion) === 2) manifest.schemaVersion = 1;
+      return manifest;
+    },
+    async getTextIndex(signal) {
+      const index = await get<TextIndex>('/text?schemaVersion=2', signal);
+      if (Number(index.schemaVersion) === 2) index.schemaVersion = 1;
+      return index;
+    },
+    async getPage(page, signal) {
+      const result = await get<PageResponse & { resourceIds?: string[] }>('/pages/' + page + '?schemaVersion=2', signal);
+      if (Number(result.page.schemaVersion) !== 2) return result;
+      if (result.revision !== revision || result.documentId !== options.documentId) throw new PreviewError('Resource revision mismatch');
+      const ids = result.resourceIds ?? [];
+      const found: Record<string, Resource> = {};
+      for (const id of ids) { const value = resources.get(id); if (value) found[id] = value; }
+      const missing = ids.filter(id => !found[id]);
+      for (let offset = 0; offset < missing.length; offset += 64) {
+        const batch = missing.slice(offset, offset + 64);
+        const response = await get<{ documentId: string; revision: string; resources: Record<string, Resource> }>('/resources?ids=' + encodeURIComponent(batch.join(',')), signal);
+        signal.throwIfAborted();
+        if (response.revision !== revision || response.documentId !== options.documentId) throw new PreviewError('Resource revision mismatch');
+        for (const id of batch) {
+          const value = response.resources[id];
+          if (!value) throw new PreviewError('Missing shared resource');
+          found[id] = value;
+          const size = (id.length + value.data.length) * 2;
+          if (!disposed && !resources.has(id) && size <= limit) {
+            while (resourceBytes + size > limit && resources.size) {
+              const oldest = resources.keys().next().value!;
+              resourceBytes -= (oldest.length + resources.get(oldest)!.data.length) * 2; resources.delete(oldest);
+            }
+            resources.set(id, value); resourceBytes += size;
+          }
+        }
+      }
+      result.resources = found; result.page.schemaVersion = 1;
+      return result;
+    },
+    dispose(deleteSession = true) {
+      if (disposed) return;
+      disposed = true; resources.clear(); resourceBytes = 0;
+      if (deleteSession && options.deleteOnDispose)
+        void request(url, { ...options.requestInit, method: 'DELETE', keepalive: true }).catch(() => {});
+    }
+  };
 }
 
 function finite(value: number): number {
@@ -264,6 +320,7 @@ export class PrintPreview extends EventTarget {
     this.canvas = document.createElement('canvas'); this.canvas.className = 'page'; this.canvas.hidden = true; this.singlePage.className = 'single-page'; this.singlePage.append(this.canvas); this.viewport.append(this.singlePage);
     const searchHost = document.createElement('div'); shell.insertBefore(searchHost, content);
     this.searchPanel = new PreviewSearch({ labels: this.labels, host: searchHost, viewport: this.viewport, manifest: () => this.manifest,
+      regions: page => this.cache.get(page)?.page.textRegions ?? (this.current?.page.pageNumber === page ? this.current.page.textRegions : undefined),
       ready: () => this.ready, load: options.source.getTextIndex?.bind(options.source), navigate: page => this.goToPage(page), changed: state => this.emit('searchchange', state) });
     this.selectionLayer = new TextSelectionLayer(this.viewport, text => { this.emit('selectionchange', text); }, text => this.showCopyStatus(this.labels.copied + text), this.labels);
     this.selectionLayer.setEnabled(this.selectionEnabled);
@@ -490,8 +547,9 @@ export class PrintPreview extends EventTarget {
     this.total.textContent = `/ ${this.pageCount}`; this.zoomLabel.textContent = `${Math.round(this.scale * 100)}%`;
     for (const [key, button] of this.buttons) button.disabled = key === 'retry' ? false : !this.pageCount || ((key === 'first' || key === 'previous') && this.pageNumber <= 1) || ((key === 'next' || key === 'last') && this.pageNumber >= this.pageCount);
   }
-  destroy(): void {
+  destroy(deleteSession = true): void {
     if (this.destroyed) return;
+    this.options.source.dispose?.(deleteSession);
     this.destroyed = true; clearTimeout(this.copyStatusTimer); this.searchPanel.destroy(); this.selectionLayer.destroy(); this.sequence++; this.manifestAbort.abort(); this.active?.abort();
     this.sidebar?.destroy(); this.sidebar = undefined;
     this.continuous?.destroy(); this.continuous = undefined;
@@ -502,8 +560,8 @@ export class PrintPreview extends EventTarget {
 export function createPrintPreview(container: HTMLElement, options: PreviewOptions): PrintPreview { return new PrintPreview(container, options); }
 
 /** Blazor には描画結果のイベントだけを返します。 */
-export function mountBlazor(container: HTMLElement, baseUrl: string, documentId: string, initialPage: number, zoom: Zoom, callback: { invokeMethodAsync(method: string, ...args: unknown[]): Promise<unknown> }, viewMode: ViewMode = 'single-page', thumbnails = false, textSelection = true, toolbar = true, labels?: PreviewOptions['labels'], headers?: Record<string, string>, credentials: RequestCredentials = 'same-origin'): PrintPreview {
-  const preview = createPrintPreview(container, { source: createHttpPreviewSource({ baseUrl, documentId, requestInit: { headers: headers ?? {}, credentials } }), initialPage, zoom, viewMode, thumbnails, textSelection, toolbar, labels: labels ?? undefined });
+export function mountBlazor(container: HTMLElement, baseUrl: string, documentId: string, initialPage: number, zoom: Zoom, callback: { invokeMethodAsync(method: string, ...args: unknown[]): Promise<unknown> }, viewMode: ViewMode = 'single-page', thumbnails = false, textSelection = true, toolbar = true, labels?: PreviewOptions['labels'], headers?: Record<string, string>, credentials: RequestCredentials = 'same-origin', deleteOnDispose = false): PrintPreview {
+  const preview = createPrintPreview(container, { source: createHttpPreviewSource({ baseUrl, documentId, deleteOnDispose, requestInit: { headers: headers ?? {}, credentials } }), initialPage, zoom, viewMode, thumbnails, textSelection, toolbar, labels: labels ?? undefined });
   preview.addEventListener('selectionchange', event => { void callback.invokeMethodAsync('OnSelectionChanged', (event as CustomEvent).detail).catch(() => {}); });
   preview.addEventListener('textselectionchange', event => { void callback.invokeMethodAsync('OnTextSelectionChanged', (event as CustomEvent).detail).catch(() => {}); });
   preview.addEventListener('searchchange', event => { void callback.invokeMethodAsync('OnSearchChanged', (event as CustomEvent).detail).catch(() => {}); });

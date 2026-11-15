@@ -57,6 +57,8 @@ public sealed class PreviewDocument
     public IReadOnlyList<DisplayPage> Pages { get; }
     /// <summary>文書内の共有リソース。</summary>
     public IReadOnlyDictionary<string, DisplayResource> Resources { get; }
+    /// <summary>文書のタイトル。</summary>
+    public string? Title => _metadata.Title;
     private readonly SKDocumentPdfMetadata _metadata;
 
     internal PreviewDocument(IReadOnlyList<DisplayPage> pages, IReadOnlyDictionary<string, DisplayResource> resources, SKDocumentPdfMetadata metadata)

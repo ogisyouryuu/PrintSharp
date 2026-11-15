@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup><PrintSharpIncludeBundledFonts Condition="'$(PrintSharpIncludeBundledFonts)' == ''">true</PrintSharpIncludeBundledFonts></PropertyGroup>
+  <ItemGroup>
+    <Content Remove="$(MSBuildThisFileDirectory)../contentFiles/any/any/Fonts/**/*" />
+    <Content Include="$(MSBuildThisFileDirectory)../contentFiles/any/any/Fonts/**/*" Condition="'$(PrintSharpIncludeBundledFonts)' == 'true'" Link="Fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

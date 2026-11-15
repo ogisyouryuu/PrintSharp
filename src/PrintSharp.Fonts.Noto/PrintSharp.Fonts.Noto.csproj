@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net11.0</TargetFramework><PackageId>PrintSharp.Fonts.Noto</PackageId><Authors>ogisyouryuu</Authors><Description>All supported Noto fonts for PrintSharp.</Description><PackageLicenseExpression>MIT</PackageLicenseExpression><RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl><PackageReadmeFile>README.md</PackageReadmeFile></PropertyGroup>
+  <ItemGroup><None Include="../../README.md" Pack="true" PackagePath="/" />
+    <ProjectReference Include="../PrintSharp.Fonts.NotoSans/PrintSharp.Fonts.NotoSans.csproj" />
+    <ProjectReference Include="../PrintSharp.Fonts.NotoSansCjk/PrintSharp.Fonts.NotoSansCjk.csproj" />
+    <ProjectReference Include="../PrintSharp.Fonts.NotoSerifCjk/PrintSharp.Fonts.NotoSerifCjk.csproj" />
+    <ProjectReference Include="../PrintSharp.Fonts.NotoSansArabic/PrintSharp.Fonts.NotoSansArabic.csproj" />
+  </ItemGroup>
+</Project>

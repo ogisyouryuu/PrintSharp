@@ -5,6 +5,11 @@
     <Project Path="demos/PrintSharp.WinForms.Demo/PrintSharp.WinForms.Demo.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/PrintSharp.Fonts.NotoSans/PrintSharp.Fonts.NotoSans.csproj" />
+    <Project Path="src/PrintSharp.Fonts.NotoSansCjk/PrintSharp.Fonts.NotoSansCjk.csproj" />
+    <Project Path="src/PrintSharp.Fonts.NotoSerifCjk/PrintSharp.Fonts.NotoSerifCjk.csproj" />
+    <Project Path="src/PrintSharp.Fonts.NotoSansArabic/PrintSharp.Fonts.NotoSansArabic.csproj" />
+    <Project Path="src/PrintSharp.Fonts.Noto/PrintSharp.Fonts.Noto.csproj" />
     <Project Path="src/PrintSharp.Preview.AspNetCore/PrintSharp.Preview.AspNetCore.csproj" />
     <Project Path="src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <Project Path="src/PrintSharp/PrintSharp.csproj" />

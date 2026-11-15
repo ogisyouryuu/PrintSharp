@@ -14,9 +14,9 @@ public sealed class DocumentPaginator
     public Document Paginate(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        if (document.Pages.All(p => p.Pagination is null && p.Cells.All(c => c.Value is not PageValue)))
+        if (document.Pages.All(p => p.Pagination is null && p.Cells.All(c => !IsDeferred(c.Value))))
             return document;
-        var result = new Document { Metadata = document.Metadata with { } };
+        var result = new Document { Metadata = document.Metadata with { }, Culture = document.Culture };
         result.Pages.Clear();
         var contexts = new List<(Page Source, Page Target, int Offset, int Count)>();
         foreach (var source in document.Pages)
@@ -25,7 +25,7 @@ public sealed class DocumentPaginator
             var pagination = source.Pagination;
             if (pagination is null)
             {
-                var target = source.Cells.Any(c => c.Value is PageValue)
+                var target = source.Cells.Any(c => IsDeferred(c.Value))
                     ? CopyPage(source, Enumerable.Range(0, rowCount)) : source;
                 contexts.Add((source, target, 0, rowCount));
                 result.Pages.Add(target);
@@ -106,10 +106,46 @@ public sealed class DocumentPaginator
             for (int c = 0; c < target.Cells.Count; c++)
             {
                 var cell = target.Cells[c];
-                if (cell.Value is PageValue value)
-                    target.Cells[c] = new Cell(cell.Row, cell.Column, value.Resolve(context),
+                if (IsDeferred(cell.Value))
+                    target.Cells[c] = new Cell(cell.Row, cell.Column, ResolveValue(cell.Value, context),
                         cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
             }
+        }
+        return result;
+    }
+
+    private static bool IsDeferred(object? value) => value is PageValue or FormulaValue { Value: PageValue };
+    private static object? ResolveValue(object? value, PageContext context) => value switch
+    {
+        PageValue deferred => deferred.Resolve(context),
+        FormulaValue { Value: PageValue deferred } formula => formula with { Value = deferred.Resolve(context) },
+        _ => value
+    };
+
+    /// <summary>論理ページを分割せず、遅延値を明細全体のコンテキストで解決します。</summary>
+    public Document ResolveLogicalPages(Document document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var result = new Document { Metadata = document.Metadata with { }, Culture = document.Culture };
+        result.Pages.Clear();
+        for (int i = 0; i < document.Pages.Count; i++)
+        {
+            var source = document.Pages[i];
+            int rows = GetRowCount(source);
+            int header = source.Pagination?.HeaderRowCount ?? 0, footer = source.Pagination?.FooterRowCount ?? 0;
+            if (header < 0 || footer < 0 || (long)header + footer > rows)
+                throw new InvalidOperationException("Pagination header/footer row counts exceed the page's row range.");
+            var target = CopyPage(source, Enumerable.Range(0, rows));
+            target.Pagination = source.Pagination;
+            var context = new PageContext { SourcePage = source, CurrentPageNumber = 1, PageCount = 1,
+                BodyRowOffset = 0, BodyRowCount = rows - (source.Pagination?.HeaderRowCount ?? 0) - (source.Pagination?.FooterRowCount ?? 0) };
+            target.Context = context;
+            for (int c = 0; c < target.Cells.Count; c++)
+            {
+                var cell = target.Cells[c];
+                if (IsDeferred(cell.Value)) target.Cells[c] = new Cell(cell.Row, cell.Column, cell.Value is PageValue { ExcelFooterText: not null } ? null : ResolveValue(cell.Value, context), cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style);
+            }
+            result.Pages.Add(target);
         }
         return result;
     }

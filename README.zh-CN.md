@@ -86,6 +86,7 @@ ClosedXML    SkiaSharp  PrintDocument
 dotnet add package PrintSharp
 dotnet add package PrintSharp.Excel
 dotnet add package PrintSharp.Pdf
+dotnet add package PrintSharp.Fonts.NotoSansCjk
 dotnet add package PrintSharp.Windows
 ```
 

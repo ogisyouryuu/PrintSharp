@@ -5,4 +5,5 @@
     <ProjectReference Include="../PrintSharp.Excel/PrintSharp.Excel.csproj" />
     <ProjectReference Include="../PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../PrintSharp.Fonts.Noto/PrintSharp.Fonts.Noto.csproj" /></ItemGroup>
 </Project>

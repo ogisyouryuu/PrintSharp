@@ -12,6 +12,9 @@ public sealed class Document
 {
     private readonly List<Page> _pages = [];
 
+    /// <summary>出力時の書式に使用するカルチャ。未指定時は不変カルチャです。</summary>
+    public System.Globalization.CultureInfo? Culture { get; set; }
+
     /// <summary>
     /// 获取或设置文档元数据信息。
     /// </summary>

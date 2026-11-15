@@ -23,6 +23,9 @@ public sealed class ClosedXmlRenderer
     /// <param name="options">渲染选项（可选）。</param>
     /// <returns>构建完成的 <see cref="XLWorkbook"/> 实例。</returns>
     public XLWorkbook RenderToWorkbook(Document document, ExcelRenderOptions? options = null)
+        => RenderToWorkbookCore(document, options, true, out _);
+
+    private static XLWorkbook RenderToWorkbookCore(Document document, ExcelRenderOptions? options, bool loadCache, out Document rendered)
     {
         ArgumentNullException.ThrowIfNull(document);
         options ??= ExcelRenderOptions.Default;
@@ -40,11 +43,30 @@ public sealed class ClosedXmlRenderer
             workbook.Properties.Keywords = document.Metadata.Keywords;
 
         // 渲染各个页面（Worksheet）
-        foreach (var page in PrintSharp.Layout.DocumentPaginator.Instance.Paginate(document).Pages)
+        rendered = options.ReportLayout switch
+        {
+            ExcelReportLayout.PerPhysicalPage => PrintSharp.Layout.DocumentPaginator.Instance.Paginate(document),
+            ExcelReportLayout.SingleSheet => PrintSharp.Layout.DocumentPaginator.Instance.ResolveLogicalPages(document),
+            _ => throw new ArgumentOutOfRangeException(nameof(options.ReportLayout))
+        };
+        foreach (var page in rendered.Pages)
         {
             RenderPageToWorksheet(page, workbook, options);
         }
 
+        if (loadCache && rendered.Pages.Any(p => p.Cells.Any(c => c.Type == CellType.Formula && c.Value is FormulaValue)))
+        {
+            // ClosedXML は再保存時に入力ストリームを参照するため、ブックと同じ寿命で保持します。
+            var stream = new MemoryStream();
+            try
+            {
+                workbook.SaveAs(stream);
+                FormulaCache.Write(stream, rendered);
+                stream.Position = 0;
+                return new XLWorkbook(stream);
+            }
+            finally { workbook.Dispose(); }
+        }
         return workbook;
     }
 
@@ -59,8 +81,17 @@ public sealed class ClosedXmlRenderer
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(outputStream);
 
-        using var workbook = RenderToWorkbook(document, options);
-        workbook.SaveAs(outputStream);
+        using var workbook = RenderToWorkbookCore(document, options, false, out var rendered);
+        if (!rendered.Pages.Any(p => p.Cells.Any(c => c.Type == CellType.Formula && c.Value is FormulaValue)))
+        {
+            workbook.SaveAs(outputStream);
+            return;
+        }
+        using var buffer = new MemoryStream();
+        workbook.SaveAs(buffer);
+        FormulaCache.Write(buffer, rendered);
+        buffer.Position = 0;
+        buffer.CopyTo(outputStream);
     }
 
     /// <summary>
@@ -74,8 +105,8 @@ public sealed class ClosedXmlRenderer
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
-        using var workbook = RenderToWorkbook(document, options);
-        workbook.SaveAs(filePath);
+        using var stream = File.Create(filePath);
+        Render(document, stream, options);
     }
 
     /// <summary>
@@ -128,7 +159,17 @@ public sealed class ClosedXmlRenderer
             ws.PageSetup.Margins.Top = margins.Top / 72d;
             ws.PageSetup.Margins.Bottom = margins.Bottom / 72d;
             ws.PageSetup.PagesWide = 1;
-            ws.PageSetup.PagesTall = 1;
+            ws.PageSetup.PagesTall = options.ReportLayout == ExcelReportLayout.SingleSheet ? 0 : 1;
+            if (options.ReportLayout == ExcelReportLayout.SingleSheet && page.Pagination is { } pagination)
+            {
+                if (pagination.HeaderRowCount > 0)
+                {
+                    ws.PageSetup.SetRowsToRepeatAtTop(1, pagination.HeaderRowCount);
+                    if (options.FreezeHeaderRows) ws.SheetView.FreezeRows(pagination.HeaderRowCount);
+                }
+                foreach (var value in page.Context.SourcePage.Cells.Select(c => c.Value).OfType<PageValue>())
+                    if (value.ExcelFooterText is { } footerText) ws.PageSetup.Footer.Center.AddText(footerText);
+            }
         }
 
         // 设置列宽
@@ -160,6 +201,8 @@ public sealed class ClosedXmlRenderer
         }
 
         // 渲染单元格
+        var rowStyles = page.Rows.ToDictionary(r => r.Index, r => r.DefaultStyle);
+        var columnStyles = page.Columns.ToDictionary(c => c.Index, c => c.DefaultStyle);
         int pictureIndex = 1;
         foreach (var cell in page.Cells)
         {
@@ -181,10 +224,10 @@ public sealed class ClosedXmlRenderer
             ApplyCellValue(xlCell, cell, ws, ref pictureIndex);
 
             // 写入样式
-            if (cell.Style is not null)
-            {
-                ApplyCellStyle(xlRange, cell.Style);
-            }
+            rowStyles.TryGetValue(cell.Row, out var rowStyle);
+            columnStyles.TryGetValue(cell.Column, out var columnStyle);
+            if (cell.Style is not null || rowStyle is not null || columnStyle is not null)
+                ApplyCellStyle(xlRange, CellStyle.Default.MergeWith(columnStyle).MergeWith(rowStyle).MergeWith(cell.Style));
         }
 
         if (options.AutoFitColumns)

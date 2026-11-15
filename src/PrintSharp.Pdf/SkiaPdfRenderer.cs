@@ -48,6 +48,8 @@ public sealed class SkiaPdfRenderer
         ArgumentNullException.ThrowIfNull(output);
         if (!output.CanWrite) throw new ArgumentException("Output stream must be writable.", nameof(output));
         options ??= PdfRenderOptions.Default;
+        options = options with { Culture = options.Culture ?? document.Culture ?? System.Globalization.CultureInfo.InvariantCulture };
+        document = FormulaEvaluator.Resolve(document);
         ValidateTextPadding(options);
         float scale = options.PointsPerLogicalUnit;
         if (!float.IsFinite(scale) || scale <= 0)
@@ -99,6 +101,8 @@ public sealed class SkiaPdfRenderer
     {
         ArgumentNullException.ThrowIfNull(document);
         options ??= PdfRenderOptions.Default;
+        options = options with { Culture = options.Culture ?? document.Culture ?? System.Globalization.CultureInfo.InvariantCulture };
+        document = FormulaEvaluator.Resolve(document);
         ValidateTextPadding(options);
         float scale = options.PointsPerLogicalUnit;
         if (!float.IsFinite(scale) || scale <= 0) throw new ArgumentOutOfRangeException(nameof(options));
@@ -123,8 +127,7 @@ public sealed class SkiaPdfRenderer
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (cell.Cell.Type is CellType.Blank or CellType.Image || cell.Cell.Value is null) continue;
-                string text = FormatValue(cell.Cell.Value, cell.EffectiveStyle.Format);
-                if (cell.Cell.Type == CellType.Formula && text.StartsWith('=')) text = text[1..];
+                string text = FormatValue(cell.Cell, cell.EffectiveStyle.Format, options);
                 var content = TextContent(cell, scale, options);
                 if (text.Length == 0 || content.Width <= 0 || content.Height <= 0) continue;
                 var style = cell.EffectiveStyle;
@@ -170,8 +173,7 @@ public sealed class SkiaPdfRenderer
     {
         var cell = layout.Cell;
         if (cell.Type is CellType.Blank or CellType.Image || cell.Value is null) return;
-        string text = FormatValue(cell.Value, layout.EffectiveStyle.Format);
-        if (cell.Type == CellType.Formula && text.StartsWith('=')) text = text[1..];
+        string text = FormatValue(cell, layout.EffectiveStyle.Format, options);
         var content = TextContent(layout, scale, options);
         if (text.Length == 0 || content.Width <= 0 || content.Height <= 0) return;
         var style = layout.EffectiveStyle;
@@ -185,9 +187,21 @@ public sealed class SkiaPdfRenderer
         finally { canvas.Restore(); }
     }
 
-    private static string FormatValue(object value, string? format)
+    private static string FormatValue(Cell cell, string? format, PdfRenderOptions options)
     {
-        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        object? value = cell.Value;
+        if (cell.Type == CellType.Formula)
+        {
+            if (value is FormulaValue formula) value = formula.Value;
+            else value = options.FormulaWithoutValue switch
+            {
+                FormulaFallback.Empty => null,
+                FormulaFallback.Text => value?.ToString()?.TrimStart('='),
+                FormulaFallback.Throw => throw new InvalidOperationException($"Formula has no printable value at {cell.Address}: {value}"),
+                _ => throw new ArgumentOutOfRangeException(nameof(options.FormulaWithoutValue))
+            };
+        }
+        var culture = options.Culture ?? System.Globalization.CultureInfo.InvariantCulture;
         return value is IFormattable formatted && !string.IsNullOrWhiteSpace(format)
             ? formatted.ToString(format, culture) ?? string.Empty
             : Convert.ToString(value, culture) ?? string.Empty;

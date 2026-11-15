@@ -24,4 +24,5 @@
 		<ProjectReference Include="..\..\src\PrintSharp.Excel.SourceGenerator\PrintSharp.Excel.SourceGenerator.csproj" OutputItemType="Analyzer" GlobalPropertiesToRemove="PublishAot;RuntimeIdentifier" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+  <ItemGroup><ProjectReference Include="../../src/PrintSharp.Fonts.Noto/PrintSharp.Fonts.Noto.csproj" /></ItemGroup>
 </Project>

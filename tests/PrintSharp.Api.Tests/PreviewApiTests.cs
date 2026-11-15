@@ -114,7 +114,7 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
         var alice = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "alice")], "test"));
         var bob = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "bob")], "test"));
         var entry = store.Add(document, alice, default);
-        Assert.Equal(entry.Manifest.Length + entry.Pdf.Length + entry.Pages.Sum(p => p.Length) + entry.TextIndex.Length, entry.Size);
+        Assert.Equal(entry.Pdf.Length + entry.ManifestBytes(true, true).Length + entry.Page(1, true, true).Length + entry.Text(true, true).Length, entry.Size);
         Assert.Equal(404, Assert.Throws<PreviewException>(() => store.Get(entry.Id, bob)).Status);
         Assert.Equal(503, Assert.Throws<PreviewException>(() => store.Add(document, alice, default)).Status);
         store.Delete(entry.Id, alice);

@@ -43,10 +43,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\PrintSharp\PrintSharp.csproj" />
+        <ProjectReference Include="../PrintSharp.Fonts.NotoSans/PrintSharp.Fonts.NotoSans.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Remove="Fonts/**/*;Licenses/**/*" />
-		<Content Include="Fonts/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Fonts/" PackageCopyToOutput="true" />
 		<Content Include="Licenses/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Licenses/" PackageCopyToOutput="true" />
 	</ItemGroup>
 

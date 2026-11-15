@@ -32,20 +32,23 @@ public sealed class PreviewStore : IPrintPreviewStore, IDisposable
             token.ThrowIfCancellationRequested();
             var bytes = PreviewJson.SerializePage(document, page.PageNumber, id, revision);
             size += bytes.Length;
-            CheckSize(size);
+
             pages.Add(bytes);
         }
         var pdf = document.ToPdfBytes(token);
         size += pdf.Length;
-        CheckSize(size);
+
         token.ThrowIfCancellationRequested();
         var manifest = PreviewJson.SerializeManifest(document, id, revision, expires);
         size += manifest.Length;
         var textIndex = PreviewJson.SerializeTextIndex(document, id, revision);
         size += textIndex.Length;
-        CheckSize(size);
+
         var entry = new PreviewEntry(id, revision, expires, _options.OwnerResolver(user), pages.ToArray(), pdf,
-            manifest, size, textIndex);
+            manifest, size, textIndex) { FileName = PdfFileName.Sanitize(document.Title) };
+        token.ThrowIfCancellationRequested();
+        size = entry.Size;
+        CheckSize(size);
         lock (_gate)
         {
             Sweep();
@@ -77,7 +80,7 @@ public sealed class PreviewStore : IPrintPreviewStore, IDisposable
     public PreviewSession Create(PreviewDocument preview, ClaimsPrincipal owner, CancellationToken ct = default)
     {
         var entry = Add(preview, owner, ct);
-        return new(entry.Id, entry.Pages.Length, entry.ExpiresAt);
+        return new(entry.Id, entry.PageCount, entry.ExpiresAt);
     }
     public bool Delete(string id, ClaimsPrincipal user)
     {
@@ -99,5 +102,3 @@ public sealed class PreviewStore : IPrintPreviewStore, IDisposable
     private void Remove(string id) { if (_entries.Remove(id, out var entry)) _bytes -= entry.Size; }
     public void Dispose() { _timer.Dispose(); lock (_gate) { _entries.Clear(); _bytes = 0; } }
 }
-
-public sealed record PreviewEntry(string Id, string Revision, DateTimeOffset ExpiresAt, string Owner, byte[][] Pages, byte[] Pdf, byte[] Manifest, long Size, byte[] TextIndex);

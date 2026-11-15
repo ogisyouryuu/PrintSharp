@@ -15,6 +15,13 @@ public sealed class DocumentBuilder
     /// </summary>
     public DocumentBuilder() { }
 
+    /// <summary>帳票の数値と日付の書式に使用するカルチャを指定します。</summary>
+    public DocumentBuilder Culture(string name)
+    {
+        _document.Culture = System.Globalization.CultureInfo.GetCultureInfo(name);
+        return this;
+    }
+
     /// <summary>
     /// 配置文档元数据信息。
     /// </summary>

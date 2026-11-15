@@ -9,6 +9,11 @@ import zipfile
 package_dir = pathlib.Path(sys.argv[1]).resolve()
 version = sys.argv[2]
 expected = {
+    "PrintSharp.Fonts.NotoSans": "net11.0",
+    "PrintSharp.Fonts.NotoSansCjk": "net11.0",
+    "PrintSharp.Fonts.NotoSerifCjk": "net11.0",
+    "PrintSharp.Fonts.NotoSansArabic": "net11.0",
+    "PrintSharp.Fonts.Noto": "net11.0",
     "PrintSharp": "net11.0",
     "PrintSharp.Excel": "net11.0",
     "PrintSharp.Pdf": "net11.0",
@@ -35,8 +40,9 @@ for package in packages:
             raise SystemExit(f"{package_id} is missing its authors")
         if not metadata.findtext("{*}description"):
             raise SystemExit(f"{package_id} is missing its description")
-        if metadata.findtext("{*}license") != "MIT":
-            raise SystemExit(f"{package_id} is missing the MIT license expression")
+        expected_license = "OFL-1.1" if package_id.startswith("PrintSharp.Fonts.") and package_id != "PrintSharp.Fonts.Noto" else "MIT"
+        if metadata.findtext("{*}license") != expected_license:
+            raise SystemExit(f"{package_id} has an invalid license expression")
         repository_element = metadata.find("{*}repository")
         repository = repository_element.get("url") if repository_element is not None else None
         if repository != "https://github.com/ogisyouryuu/PrintSharp":
@@ -47,6 +53,14 @@ for package in packages:
             raise SystemExit(f"{package_id} does not contain its expected target framework")
         if any(".Tests" in name or "Benchmark" in name for name in names):
             raise SystemExit(f"{package_id} contains test or benchmark files")
+        font_files = [name for name in names if name.endswith((".ttf", ".otf"))]
+        if package_id == "PrintSharp.Pdf" and font_files:
+            raise SystemExit("PrintSharp.Pdf must not embed font assets")
+        if package_id.startswith("PrintSharp.Fonts.") and package_id != "PrintSharp.Fonts.Noto":
+            if len(font_files) != 2 or not any(name.endswith(".txt") and "OFL-" in name for name in names):
+                raise SystemExit(f"{package_id} must contain Regular/Bold fonts and their OFL license")
+            if f"buildTransitive/{package_id}.targets" not in names:
+                raise SystemExit(f"{package_id} is missing automatic font copying targets")
         if package_id == "PrintSharp.Preview.Blazor":
             for module in ("preview", "continuous", "thumbnails", "search", "selection", "labels"):
                 if f"staticwebassets/{module}.js" not in names:

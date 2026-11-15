@@ -8,6 +8,7 @@ interface Hit { page: number; region: TextRegion; start: number }
 interface Options {
   labels: PreviewLabels;
   host: HTMLElement; viewport: HTMLElement; manifest: () => Manifest | undefined;
+  regions?: (page: number) => TextRegion[] | undefined;
   load?: (signal: AbortSignal) => Promise<TextIndex>; ready: () => Promise<void>;
   navigate: (page: number) => Promise<void>; changed: (state: SearchState) => void;
 }
@@ -129,7 +130,8 @@ export class PreviewSearch {
       this.hits.forEach((hit, index) => { if (hit.page === page) regions.set(hit.region, regions.get(hit.region) === true || index + 1 === this.value.current); });
       regions.forEach((current, region) => {
         const matches = this.hits.map((hit, index) => ({ hit, current: index + 1 === this.value.current })).filter(item => item.hit.page === page && item.hit.region === region);
-        const boxes = region.boxes === undefined || region.boxes === null ? [{ ...region, current }] : region.boxes.filter(box => matches.some(({ hit }) => box.start < hit.start + this.value.query.length && box.start + box.length > hit.start)).map(box => ({ ...box, current: matches.some(({ hit, current }) => current && box.start < hit.start + this.value.query.length && box.start + box.length > hit.start) }));
+        const detailed = region.boxes ?? this.options.regions?.(page)?.find(r => r.text === region.text && r.x === region.x && r.y === region.y && r.width === region.width && r.height === region.height)?.boxes;
+        const boxes = detailed === undefined || detailed === null ? [{ ...region, current }] : detailed.filter(box => matches.some(({ hit }) => box.start < hit.start + this.value.query.length && box.start + box.length > hit.start)).map(box => ({ ...box, current: matches.some(({ hit, current }) => current && box.start < hit.start + this.value.query.length && box.start + box.length > hit.start) }));
         const rectangles: { x: number; y: number; width: number; height: number; current: boolean }[] = [];
         for (const box of boxes.sort((a,b) => a.y - b.y || a.x - b.x)) {
           const x = Math.max(region.x, box.x), y = Math.max(region.y, box.y);

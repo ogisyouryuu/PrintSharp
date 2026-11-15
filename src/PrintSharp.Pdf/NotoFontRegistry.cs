@@ -24,19 +24,19 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
     {
         try
         {
-            foreach (var family in (families ?? Families).Distinct())
+            foreach (var family in (families ?? Families.Where(f => File.Exists(Path.Combine(directory, $"{f}-Regular.{(f.Contains("CJK") ? "otf" : "ttf")}")))).Distinct())
                 foreach (var bold in new[] { false, true })
                 {
                     string extension = family.Contains("CJK", StringComparison.Ordinal) ? "otf" : "ttf";
                     string path = Path.Combine(directory, $"{family}-{(bold ? "Bold" : "Regular")}.{extension}");
-                    if (!File.Exists(path)) throw new FileNotFoundException("Bundled Noto font not found.", path);
+                    if (!File.Exists(path)) throw new FileNotFoundException($"Noto font not found. Install {PackageFor(family)} or supply both Regular and Bold font files.", path);
                     var face = SKTypeface.FromFile(path) ?? throw new InvalidDataException($"Invalid font: {path}");
                     _faces.Add((family, bold), face);
                     _fonts.Add((family, bold), new(face));
                 }
         }
         catch { Dispose(); throw; }
-        if (_faces.Count == 0) throw new ArgumentException("At least one font family is required.", nameof(families));
+        if (_faces.Count == 0) throw new FileNotFoundException("No Noto fonts found. Install PrintSharp.Fonts.NotoSans or PrintSharp.Fonts.Noto, or provide a font directory.", directory);
     }
 
     /// <inheritdoc/>
@@ -66,7 +66,7 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
             var selected = candidates.FirstOrDefault(candidate => element.EnumerateRunes().All(r =>
                 IsLayoutControl(r) || GetFont(candidate, bold).GetGlyph(r.Value) != 0));
             if (selected is null)
-                throw new InvalidOperationException($"Bundled Noto fonts do not cover text element: {element}");
+                throw new InvalidOperationException($"Noto fonts do not cover text element: {element}. Install PrintSharp.Fonts.NotoSansCjk (CJK), PrintSharp.Fonts.NotoSansArabic (Arabic), or PrintSharp.Fonts.Noto (all fonts).");
             if (current != selected && run.Length > 0)
             {
                 yield return (run.ToString(), current!);
@@ -77,6 +77,13 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
         }
         if (run.Length > 0) yield return (run.ToString(), current!);
     }
+
+    private static string PackageFor(string family) => family switch
+    {
+        "NotoSansCJKjp" => "PrintSharp.Fonts.NotoSansCjk",
+        "NotoSerifCJKjp" => "PrintSharp.Fonts.NotoSerifCjk",
+        _ => "PrintSharp.Fonts." + family
+    };
 
     private string AvailableFamily(string? family)
     {

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework><PackageId>PrintSharp.Fonts.NotoSansCjk</PackageId>
+    <Authors>ogisyouryuu</Authors><Description>Optional Noto font assets for PrintSharp: NotoSansCjk.</Description>
+    <PackageLicenseExpression>OFL-1.1</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl><RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="buildTransitive/PrintSharp.Fonts.NotoSansCjk.targets" Pack="true" PackagePath="buildTransitive/" />
+    <Content Include="../PrintSharp.Pdf/Fonts/NotoSansCJKjp-*.otf" Link="Fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Fonts/" />
+    <Content Include="../PrintSharp.Pdf/Fonts/OFL-CJK.txt" Link="Fonts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="contentFiles/any/any/Fonts/" />
+  </ItemGroup>
+</Project>

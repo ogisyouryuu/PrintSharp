@@ -60,6 +60,11 @@ jobs:
           New-Item -ItemType Directory -Path $output -Force | Out-Null
           $version = '${{ steps.version.outputs.version }}'
           $projects = @(
+            'src/PrintSharp.Fonts.NotoSans/PrintSharp.Fonts.NotoSans.csproj',
+            'src/PrintSharp.Fonts.NotoSansCjk/PrintSharp.Fonts.NotoSansCjk.csproj',
+            'src/PrintSharp.Fonts.NotoSerifCjk/PrintSharp.Fonts.NotoSerifCjk.csproj',
+            'src/PrintSharp.Fonts.NotoSansArabic/PrintSharp.Fonts.NotoSansArabic.csproj',
+            'src/PrintSharp.Fonts.Noto/PrintSharp.Fonts.Noto.csproj',
             'src/PrintSharp/PrintSharp.csproj',
             'src/PrintSharp.Excel/PrintSharp.Excel.csproj',
             'src/PrintSharp.Pdf/PrintSharp.Pdf.csproj',

@@ -23,4 +23,5 @@
 		<ProjectReference Include="..\..\src\PrintSharp.Pdf\PrintSharp.Pdf.csproj" />
 	</ItemGroup>
 
+  <ItemGroup><ProjectReference Include="../../src/PrintSharp.Fonts.Noto/PrintSharp.Fonts.Noto.csproj" /></ItemGroup>
 </Project>
