@@ -123,7 +123,7 @@ public sealed class SkiaPdfRenderer
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (cell.Cell.Type is CellType.Blank or CellType.Image || cell.Cell.Value is null) continue;
-                string text = Convert.ToString(cell.Cell.Value, System.Globalization.CultureInfo.CurrentCulture) ?? string.Empty;
+                string text = FormatValue(cell.Cell.Value, cell.EffectiveStyle.Format);
                 if (cell.Cell.Type == CellType.Formula && text.StartsWith('=')) text = text[1..];
                 var content = TextContent(cell, scale, options);
                 if (text.Length == 0 || content.Width <= 0 || content.Height <= 0) continue;
@@ -170,7 +170,7 @@ public sealed class SkiaPdfRenderer
     {
         var cell = layout.Cell;
         if (cell.Type is CellType.Blank or CellType.Image || cell.Value is null) return;
-        string text = Convert.ToString(cell.Value, System.Globalization.CultureInfo.CurrentCulture) ?? string.Empty;
+        string text = FormatValue(cell.Value, layout.EffectiveStyle.Format);
         if (cell.Type == CellType.Formula && text.StartsWith('=')) text = text[1..];
         var content = TextContent(layout, scale, options);
         if (text.Length == 0 || content.Width <= 0 || content.Height <= 0) return;
@@ -183,6 +183,14 @@ public sealed class SkiaPdfRenderer
         canvas.Save();
         try { (options.TextRenderer ?? DefaultText.Value).DrawText(canvas, text, style, content, scale); }
         finally { canvas.Restore(); }
+    }
+
+    private static string FormatValue(object value, string? format)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        return value is IFormattable formatted && !string.IsNullOrWhiteSpace(format)
+            ? formatted.ToString(format, culture) ?? string.Empty
+            : Convert.ToString(value, culture) ?? string.Empty;
     }
 
     private static void ValidateTextPadding(PdfRenderOptions options)

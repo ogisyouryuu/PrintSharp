@@ -20,3 +20,20 @@ jobs:
       - run: dotnet restore PrintSharp.slnx
       - run: dotnet build PrintSharp.slnx -c Release --no-restore
       - run: dotnet test PrintSharp.slnx -c Release --no-build
+
+  preview-browser:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.100
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: packages/preview/package-lock.json
+      - run: npm ci --prefix packages/preview
+      - run: npx playwright install chromium
+        working-directory: packages/preview
+      - run: npm test --prefix packages/preview

@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 const files = {
+  '/labels.js': ['text/javascript', new URL('../dist/labels.js', import.meta.url)],
   '/selection.js': ['text/javascript', new URL('../dist/selection.js', import.meta.url)],
   '/search.js': ['text/javascript', new URL('../dist/search.js', import.meta.url)],
   '/': ['text/html', new URL('./test.html', import.meta.url)],

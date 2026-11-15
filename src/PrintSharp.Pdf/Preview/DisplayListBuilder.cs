@@ -37,6 +37,10 @@ public sealed class DisplayListBuilder
     }
     /// <summary>組版済み字形列と共有輪郭を追加します。Typeface は PDF 出力完了まで保持してください。</summary>
     public void DrawGlyphRun(SKTypeface face, float size, float skew, ushort[] glyphs, SKPoint[] positions, SKColor color)
+        => DrawGlyphRun(face, size, skew, glyphs, positions, color, null, null);
+
+    /// <summary>PDF の文字抽出に使用する UTF-8 とクラスタ位置を指定します。</summary>
+    public void DrawGlyphRun(SKTypeface face, float size, float skew, ushort[] glyphs, SKPoint[] positions, SKColor color, byte[]? text, uint[]? clusters)
     {
         using var font = new SKFont(face, 1) { SkewX = skew };
         var instances = new List<DisplayGlyph>();
@@ -51,6 +55,6 @@ public sealed class DisplayListBuilder
             }
             instances.Add(new(id, positions[i].X, positions[i].Y, size));
         }
-        Add(new("glyphRun") { Color = Color(color), Glyphs = instances.AsReadOnly(), PdfRun = new(face, size, skew, glyphs, positions) });
+        Add(new("glyphRun") { Color = Color(color), Glyphs = instances.AsReadOnly(), PdfRun = new(face, size, skew, glyphs, positions, text, clusters) });
     }
 }

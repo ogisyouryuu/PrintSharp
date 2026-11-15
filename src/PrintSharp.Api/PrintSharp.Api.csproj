@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup><TargetFramework>net11.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../PrintSharp.Preview.AspNetCore/PrintSharp.Preview.AspNetCore.csproj" />
     <ProjectReference Include="../PrintSharp.Excel/PrintSharp.Excel.csproj" />
     <ProjectReference Include="../PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
   </ItemGroup>

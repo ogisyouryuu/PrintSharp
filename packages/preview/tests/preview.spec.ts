@@ -48,7 +48,7 @@ test('navigation, zoom, racing loads, resize, errors, and disposal', async ({ pa
     await Promise.all([preview.goToPage(2), preview.goToPage(3)]);
   });
   await expect(page.getByRole('spinbutton', { name: '页码' })).toHaveValue('3');
-  await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Page 3 / 3');
+  await expect(page.locator('canvas')).toHaveAttribute('aria-label', '第 3 页，共 3 页');
   await page.getByRole('button', { name: '放大', exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as any).preview.actualZoom)).toBe(1.25);
   await page.getByRole('button', { name: '适合宽度' }).click();

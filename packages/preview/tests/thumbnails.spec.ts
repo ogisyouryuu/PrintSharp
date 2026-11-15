@@ -23,7 +23,7 @@ test('thumbnail sidebar virtualizes 1000 pages, selects, highlights and releases
   const before = await page.evaluate(() => (window as any).preview.cacheUsage.pages);
   expect(before).toBe(1);
   await page.locator('[data-thumbnail-page="500"]').click();
-  await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', 'Page 500 / 1000');
+  await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', '第 500 页，共 1000 页');
   await expect(page.locator('[data-thumbnail-page="500"]')).toHaveAttribute('aria-current', 'page');
   await page.evaluate(() => (window as any).preview.goToPage(900));
   await expect(page.locator('[data-thumbnail-page="900"]')).toHaveAttribute('aria-current', 'page');
@@ -60,7 +60,7 @@ test('foreground navigation aborts a slow thumbnail and does not wait for it', a
   });
   await expect.poll(() => page.evaluate(() => (window as any).events.includes('start:2'))).toBe(true);
   await page.evaluate(() => (window as any).preview.goToPage(30));
-  await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', 'Page 30 / 30');
+  await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', '第 30 页，共 30 页');
   const events = await page.evaluate(() => (window as any).events as string[]);
   expect(events[0]).toBe('start:1');
   expect(events.indexOf('abort:2')).toBeLessThan(events.indexOf('start:30'));

@@ -103,8 +103,19 @@ public sealed class BorderBuilder
         return this;
     }
 
-    /// <summary>
-    /// 构建 <see cref="BorderSpec"/> 实例。
-    /// </summary>
+    /// <summary>16 進数の色で罫線を設定します。</summary>
+    public BorderBuilder Top(BorderStyle style, string hexColor) => Top(style, ColorSpec.FromHex(hexColor));
+    /// <summary>16 進数の色で罫線を設定します。</summary>
+    public BorderBuilder Bottom(BorderStyle style, string hexColor) => Bottom(style, ColorSpec.FromHex(hexColor));
+    /// <summary>16 進数の色で罫線を設定します。</summary>
+    public BorderBuilder Left(BorderStyle style, string hexColor) => Left(style, ColorSpec.FromHex(hexColor));
+    /// <summary>16 進数の色で罫線を設定します。</summary>
+    public BorderBuilder Right(BorderStyle style, string hexColor) => Right(style, ColorSpec.FromHex(hexColor));
+    /// <summary>16 進数の色で罫線を設定します。</summary>
+    public BorderBuilder Horizontal(BorderStyle style, string hexColor) => Horizontal(style, ColorSpec.FromHex(hexColor));
+    /// <summary>16 進数の色で罫線を設定します。</summary>
+    public BorderBuilder Vertical(BorderStyle style, string hexColor) => Vertical(style, ColorSpec.FromHex(hexColor));
+
+    /// <summary>罫線の設定を構築します。</summary>
     public BorderSpec Build() => new(_top, _bottom, _left, _right, _diagonal);
 }

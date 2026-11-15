@@ -17,7 +17,7 @@ for (const [name, port] of [['vue', 5199], ['blazor', Number(process.env.PREVIEW
     await expect(page.locator('canvas')).toBeVisible();
     await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-demo.png`, import.meta.url)), fullPage: true });
     await page.getByRole('button', { name: '下一页', exact: true }).click();
-    await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Page 2 / 2');
+    await expect(page.locator('canvas')).toHaveAttribute('aria-label', '第 2 页，共 2 页');
     await expect(page.getByTestId('summary')).toContainText('当前第 2 页');
     const before = await page.locator('canvas').evaluate(canvas => parseFloat((canvas as HTMLElement).style.width));
     await page.getByRole('button', { name: '放大', exact: true }).click();
@@ -37,7 +37,7 @@ for (const [name, port] of [['vue', 5199], ['blazor', Number(process.env.PREVIEW
     await page.locator('#data').blur();
     await page.getByRole('button', { name: '上传并预览', exact: true }).click();
     await expect(pdfLink).not.toHaveAttribute('href', previousId!);
-    await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Page 1 / 2');
+    await expect(page.locator('canvas')).toHaveAttribute('aria-label', '第 1 页，共 2 页');
     await expect(page.locator('canvas')).toBeVisible();
     await expect(page.getByTestId('summary')).toContainText('绘制完成');
     await page.getByRole('button', { name: '连续滚动', exact: true }).click();
@@ -49,12 +49,12 @@ for (const [name, port] of [['vue', 5199], ['blazor', Number(process.env.PREVIEW
     await page.screenshot({ path: fileURLToPath(new URL(`../../../artifacts/preview-tests/${name}-continuous.png`, import.meta.url)), fullPage: true });
     await page.getByRole('button', { name: '单页', exact: true }).click();
     await expect(page.locator('canvas')).toHaveCount(1);
-    await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Page 2 / 2');
+    await expect(page.locator('canvas')).toHaveAttribute('aria-label', '第 2 页，共 2 页');
     await page.getByRole('button', { name: '缩略图', exact: true }).click();
     await expect(page.getByTestId('summary')).toContainText('缩略图已打开');
     await expect(page.locator('[data-thumbnail-page="1"] canvas')).toBeVisible();
     await page.locator('[data-thumbnail-page="1"]').click();
-    await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', 'Page 1 / 2');
+    await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', '第 1 页，共 2 页');
     await expect(page.locator('[data-thumbnail-page="1"]')).toHaveAttribute('aria-current', 'page');
     await page.getByRole('button', { name: '连续滚动', exact: true }).click();
     await page.locator('[data-thumbnail-page="2"]').click();

@@ -1,3 +1,4 @@
+import { resolveLabels, type PreviewLabels } from './labels.js';
 import type { DisplayPage } from './index.js';
 import type { TextRegion, TextBox } from './search.js';
 interface Entry { scale?: number; canvas: HTMLCanvasElement; page: DisplayPage; layer: HTMLDivElement; spans: { element: HTMLSpanElement; box: TextBox; region: TextRegion; cell: number }[] }
@@ -61,7 +62,7 @@ export class TextSelectionLayer {
     const text = this.selectedText;
     if (text && event.clipboardData) { event.preventDefault(); event.clipboardData.setData('text/plain', text); this.copied(text); }
   };
-  constructor(private readonly viewport: HTMLElement, private readonly changed: (text: string) => void, private readonly copied: (text: string) => void = () => {}) {
+  constructor(private readonly viewport: HTMLElement, private readonly changed: (text: string) => void, private readonly copied: (text: string) => void = () => {}, private readonly labels: PreviewLabels = resolveLabels()) {
     document.addEventListener('selectionchange', this.onChange);
     document.addEventListener('copy', this.onCopy);
     viewport.addEventListener('pointerdown', this.onPointerDown);
@@ -106,7 +107,7 @@ export class TextSelectionLayer {
   async copy(): Promise<void> {
     const text = this.selectedText;
     if (!text) return;
-    if (!navigator.clipboard?.writeText) throw new Error('当前环境无法访问剪贴板，请使用 Ctrl+C / Command+C');
+    if (!navigator.clipboard?.writeText) throw new Error(this.labels.clipboardUnavailable);
     await navigator.clipboard.writeText(text);
     this.copied(text);
   }
@@ -122,7 +123,7 @@ export class TextSelectionLayer {
     if (existing) { this.clear(); existing.layer.remove(); this.entries.delete(canvas); }
     if (!page.textRegions?.some(region => region.boxes?.length)) return;
     const layer = document.createElement('div'); layer.className = 'text-layer'; layer.hidden = !this.enabled;
-    layer.setAttribute('aria-label', `第 ${page.pageNumber} 页文字`);
+    layer.setAttribute('aria-label', this.labels.pageText.replace('{page}', String(page.pageNumber)));
     const entry: Entry = { canvas, page, layer, spans: [] };
     page.textRegions.forEach((region, cell) => {
       if (!region.boxes?.length) return;

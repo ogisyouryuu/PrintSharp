@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <PrintSharpIncludeBundledFonts Condition="'$(PrintSharpIncludeBundledFonts)' == ''">true</PrintSharpIncludeBundledFonts>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Remove="$(MSBuildThisFileDirectory)..\contentFiles\any\any\Fonts\**\*" />
+    <Content Include="$(MSBuildThisFileDirectory)..\contentFiles\any\any\Fonts\**\*" Condition="'$(PrintSharpIncludeBundledFonts)' == 'true'" Link="Fonts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Remove="$(MSBuildThisFileDirectory)..\contentFiles\any\any\Licenses\**\*" />
+    <Content Include="$(MSBuildThisFileDirectory)..\contentFiles\any\any\Licenses\**\*" Link="Licenses\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

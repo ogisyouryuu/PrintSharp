@@ -31,7 +31,7 @@ test('search locates multilingual literal text across pages, wraps and keeps hig
   await page.evaluate(() => (window as any).preview.search('alpha'));
   await expect(page.locator('.search-status')).toHaveText('1 / 20');
   await page.getByRole('button', { name: '上一处', exact: true }).click();
-  await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', 'Page 20 / 20');
+  await expect(page.locator('.viewport canvas')).toHaveAttribute('aria-label', '第 20 页，共 20 页');
   await expect(page.locator('.search-status')).toHaveText('20 / 20');
   await page.evaluate(() => (window as any).preview.search('A+B'));
   await expect(page.locator('.search-status')).toHaveText('1 / 1');

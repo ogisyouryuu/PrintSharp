@@ -5,9 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>PrintSharp.Preview.Blazor</PackageId>
     <Description>PrintSharp Canvas preview component for Blazor.</Description>
+    <Authors>ogisyouryuu</Authors>
+    <RepositoryUrl>https://github.com/ogisyouryuu/PrintSharp</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.0.0" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>

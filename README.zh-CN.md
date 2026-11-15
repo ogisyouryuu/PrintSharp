@@ -17,7 +17,7 @@
 
 使用一份类 Excel 的网格文档，同时稳定输出为 **Excel**、**PDF** 或 **Windows 打印机**。PrintSharp 以行、列和单元格跨度维护布局，而非自由的 `X` / `Y` 坐标；Excel 网格始终是布局的来源。
 
-> **状态：** 早期库（`0.1.1`）。稳定版本前，公开 API 和渲染行为可能会演进。
+> **状态：** 早期库（`0.3.0`）。稳定版本前，公开 API 和渲染行为可能会演进。
 
 HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 

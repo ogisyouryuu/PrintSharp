@@ -1,3 +1,4 @@
+import type { PreviewLabels } from './labels.js';
 import type { Manifest } from './index.js';
 export interface TextBox { start: number; length: number; x: number; y: number; width: number; height: number; rtl: boolean }
 export interface TextRegion { boxes?: TextBox[]; text: string; x: number; y: number; width: number; height: number }
@@ -5,6 +6,7 @@ export interface TextIndex { schemaVersion: 1; documentId: string; revision: str
 export interface SearchState { query: string; total: number; current: number; busy: boolean; truncated: boolean; error?: string }
 interface Hit { page: number; region: TextRegion; start: number }
 interface Options {
+  labels: PreviewLabels;
   host: HTMLElement; viewport: HTMLElement; manifest: () => Manifest | undefined;
   load?: (signal: AbortSignal) => Promise<TextIndex>; ready: () => Promise<void>;
   navigate: (page: number) => Promise<void>; changed: (state: SearchState) => void;
@@ -25,14 +27,14 @@ export class PreviewSearch {
   private value: SearchState = { query: '', total: 0, current: 0, busy: false, truncated: false };
   constructor(private readonly options: Options) {
     options.host.className = 'search-bar'; options.host.hidden = true;
-    this.input.type = 'search'; this.input.maxLength = 256; this.input.placeholder = '输入关键词'; this.input.setAttribute('aria-label', '搜索关键词');
+    this.input.type = 'search'; this.input.maxLength = 256; this.input.placeholder = this.options.labels.searchPlaceholder; this.input.setAttribute('aria-label', this.options.labels.searchLabel);
     this.status.setAttribute('role', 'status'); this.status.setAttribute('aria-live', 'polite'); this.status.className = 'search-status';
     const button = (element: HTMLButtonElement, label: string, click: () => void) => {
       element.type = 'button'; element.textContent = label; element.addEventListener('click', click); return element;
     };
-    options.host.append(this.input, button(this.previous, '上一处', () => { void this.move(-1).catch(() => {}); }),
-      button(this.next, '下一处', () => { void this.move(1).catch(() => {}); }), this.status,
-      button(document.createElement('button'), '关闭搜索', () => this.close()));
+    options.host.append(this.input, button(this.previous, this.options.labels.previousMatch, () => { void this.move(-1).catch(() => {}); }),
+      button(this.next, this.options.labels.nextMatch, () => { void this.move(1).catch(() => {}); }), this.status,
+      button(document.createElement('button'), this.options.labels.closeSearch, () => this.close()));
     this.input.addEventListener('input', () => {
       const query = this.input.value; this.reset(query);
       this.timer = setTimeout(() => { void this.search(query).catch(() => {}); }, 250);
@@ -54,7 +56,7 @@ export class PreviewSearch {
   }
   private update(): void {
     this.previous.disabled = this.next.disabled = this.value.busy || !this.hits.length;
-    this.status.textContent = this.value.error ?? (this.value.busy ? '正在搜索…' : this.value.query ? this.hits.length ? `${this.value.current} / ${this.value.total}${this.value.truncated ? '（已达上限）' : ''}` : '无匹配结果' : '');
+    this.status.textContent = this.value.error ?? (this.value.busy ? this.options.labels.searching : this.value.query ? this.hits.length ? `${this.value.current} / ${this.value.total}${this.value.truncated ? this.options.labels.searchLimit : ''}` : this.options.labels.noMatches : '');
     this.options.changed(this.state);
   }
   async search(query: string): Promise<void> {
@@ -65,20 +67,20 @@ export class PreviewSearch {
     const abort = new AbortController(); this.abort = abort;
     this.value.busy = true; this.update();
     try {
-      if (query.length > 256) throw new Error('关键词不能超过 256 个字符');
+      if (query.length > 256) throw new Error(this.options.labels.queryTooLong);
       await this.options.ready(); abort.signal.throwIfAborted();
-      if (Date.parse(this.options.manifest()!.expiresAt) <= Date.now()) throw new Error('预览已过期，请重新生成');
-      if (!this.options.load) throw new Error('当前数据源不支持文字搜索');
+      if (Date.parse(this.options.manifest()!.expiresAt) <= Date.now()) throw new Error(this.options.labels.expired);
+      if (!this.options.load) throw new Error(this.options.labels.searchUnsupported);
       if (!this.index) {
         const index = await this.options.load(abort.signal); abort.signal.throwIfAborted();
         const manifest = this.options.manifest()!;
         if (index.schemaVersion !== 1 || index.documentId !== manifest.documentId || index.revision !== manifest.revision || index.pages.length !== manifest.pageCount)
-          throw new Error('文字索引不属于当前文档版本');
+          throw new Error(this.options.labels.invalidTextIndex);
         for (let i = 0; i < index.pages.length; i++) {
           const page = index.pages[i];
-          if (page.pageNumber !== i + 1 || !Array.isArray(page.regions)) throw new Error('文字索引页码无效');
+          if (page.pageNumber !== i + 1 || !Array.isArray(page.regions)) throw new Error(this.options.labels.invalidTextPage);
           for (const r of page.regions) if (typeof r.text !== 'string' || ![r.x,r.y,r.width,r.height].every(Number.isFinite) || r.width <= 0 || r.height <= 0)
-            throw new Error('文字索引区域无效');
+            throw new Error(this.options.labels.invalidTextRegion);
         }
         this.index = index;
       }

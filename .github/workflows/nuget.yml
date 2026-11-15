@@ -43,6 +43,13 @@ jobs:
             throw "Release tag must match vMAJOR.MINOR.PATCH: $tag"
           }
           "version=$($tag.Substring(1))" >> $env:GITHUB_OUTPUT
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: packages/preview/package-lock.json
+      - run: npm ci --prefix packages/preview
+      - run: npm run build --prefix packages/preview
       - run: dotnet restore PrintSharp.slnx
       - run: dotnet build PrintSharp.slnx -c Release --no-restore
       - run: dotnet test PrintSharp.slnx -c Release --no-build
@@ -56,7 +63,9 @@ jobs:
             'src/PrintSharp/PrintSharp.csproj',
             'src/PrintSharp.Excel/PrintSharp.Excel.csproj',
             'src/PrintSharp.Pdf/PrintSharp.Pdf.csproj',
-            'src/PrintSharp.Windows/PrintSharp.Windows.csproj'
+            'src/PrintSharp.Windows/PrintSharp.Windows.csproj',
+            'src/PrintSharp.Preview.AspNetCore/PrintSharp.Preview.AspNetCore.csproj',
+            'src/PrintSharp.Preview.Blazor/PrintSharp.Preview.Blazor.csproj'
           )
           foreach ($project in $projects) {
             dotnet pack $project -c Release --no-build --no-restore -p:PackageVersion=$version -p:PackageOutputPath=$output

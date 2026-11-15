@@ -10,11 +10,11 @@ Blazor RCL wrapper for the shared TypeScript Canvas preview. Reference this proj
                   Height="600px" />
 ```
 
-Create a preview session using `PrintSharp.Api` first. `BaseUrl` must be reachable by the browser. Static SSR alone does not run this component's JavaScript initialization. For bearer tokens or other custom browser request behavior, use a same-origin BFF or the TypeScript source interface.
+Create a session from your Document with `PrintSharp.Preview.AspNetCore` (see the integration guide), or use `PrintSharp.Api`. `BaseUrl` must be reachable by the browser. Static SSR alone does not run this component's JavaScript initialization. Use `RequestHeaders` for bearer tokens and `Credentials="include"` for cross-origin cookies.
 
-`wwwroot/preview.js`, `wwwroot/continuous.js`, `wwwroot/thumbnails.js`, `wwwroot/search.js`, and `wwwroot/selection.js` are generated from `packages/preview/src` and committed for .NET-only consumers. To update them, run `npm --prefix packages/preview run build` from the repository root. Do not edit the generated files directly.
+`wwwroot/preview.js`, `wwwroot/continuous.js`, `wwwroot/thumbnails.js`, `wwwroot/search.js`, `wwwroot/selection.js`, and `wwwroot/labels.js` are generated from `packages/preview/src` and committed for .NET-only consumers. To update them, run `npm --prefix packages/preview run build` from the repository root. Do not edit the generated files directly.
 
-See the [integration guide](../../doc/canvas-preview.zh-CN.md) for methods, callbacks, lifecycle, caching, and limitations. This package has not been published to NuGet.
+See the [integration guide](../../doc/canvas-preview.zh-CN.md) for methods, callbacks, lifecycle, caching, and limitations. The NuGet release workflow packages this RCL alongside the other libraries.
 
 Use `ViewMode="continuous"` or `@bind-ViewMode` to enable continuous scrolling. `ViewModeChanged` reports toolbar switches; `SetViewModeAsync` switches through the component reference. Page events in continuous mode track the viewport center. The demo displays the selected mode and verifies both directions of switching.
 

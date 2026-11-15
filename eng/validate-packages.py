@@ -13,6 +13,8 @@ expected = {
     "PrintSharp.Excel": "net11.0",
     "PrintSharp.Pdf": "net11.0",
     "PrintSharp.Windows": "net11.0-windows",
+    "PrintSharp.Preview.AspNetCore": "net11.0",
+    "PrintSharp.Preview.Blazor": "net11.0",
 }
 packages = sorted(package_dir.glob("*.nupkg"))
 if len(packages) != len(expected):
@@ -45,6 +47,10 @@ for package in packages:
             raise SystemExit(f"{package_id} does not contain its expected target framework")
         if any(".Tests" in name or "Benchmark" in name for name in names):
             raise SystemExit(f"{package_id} contains test or benchmark files")
+        if package_id == "PrintSharp.Preview.Blazor":
+            for module in ("preview", "continuous", "thumbnails", "search", "selection", "labels"):
+                if f"staticwebassets/{module}.js" not in names:
+                    raise SystemExit(f"Missing Blazor static asset: {module}.js")
         if package_id == "PrintSharp.Excel" and not any(
             name.startswith("analyzers/dotnet/cs/") and name.endswith(".dll") for name in names
         ):

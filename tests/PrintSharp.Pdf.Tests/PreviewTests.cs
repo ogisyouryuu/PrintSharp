@@ -9,6 +9,36 @@ namespace PrintSharp.Pdf.Tests;
 
 public sealed class PreviewTests
 {
+    [Fact]
+    public void PdfExtractsDigitsWithExplicitUnicodeMappings()
+    {
+        const string text = "R0001 0123456789 12,345.67";
+        var document = Document.Create(d => d.Page(p => p.Columns(400).Rows(40)
+            .Cell(0, 0, c => c.Text(text).Font("NotoSans", 12))));
+        using var pdf = UglyToad.PdfPig.PdfDocument.Open(SkiaPdfRenderer.Instance.RenderToBytes(document));
+        Assert.Equal(text.Replace(" ", ""), pdf.GetPage(1).Text.Replace(" ", ""));
+    }
+    [Fact]
+    public void SelectedFontFamiliesCanRenderWithoutDefaultRegistry()
+    {
+        using var fonts = new NotoFontRegistry(Path.Combine(AppContext.BaseDirectory, "Fonts"), ["NotoSansCJKjp"]);
+        var document = Document.Create(d => d.Page(p => p.Columns(200).Rows(30).Cell("A1", "日本語 R0001")));
+        var preview = SkiaPdfRenderer.Instance.CreatePreview(document, new PdfRenderOptions { TextRenderer = new NotoPdfTextRenderer(fonts) });
+        Assert.Equal("日本語 R0001", preview.Pages[0].TextRegions[0].Text);
+        Assert.NotEmpty(preview.ToPdfBytes());
+    }
+
+    [Fact]
+    public void PreviewAppliesNumericAndDateFormats()
+    {
+        var document = Document.Create(d => d.Page(p => p.Columns(200).Rows(30, 30)
+            .Cell(0, 0, c => c.Value(12345).Format("#,##0"))
+            .Cell(1, 0, c => c.Value(new DateOnly(2026, 11, 14)).Format("yyyy/MM/dd"))));
+        var preview = SkiaPdfRenderer.Instance.CreatePreview(document);
+        Assert.Equal(12345.ToString("#,##0"), preview.Pages[0].TextRegions[0].Text);
+        Assert.Equal(new DateOnly(2026, 11, 14).ToString("yyyy/MM/dd"), preview.Pages[0].TextRegions[1].Text);
+    }
+
     [Theory]
     [InlineData(HorizontalAlignment.Left)]
     [InlineData(HorizontalAlignment.Right)]

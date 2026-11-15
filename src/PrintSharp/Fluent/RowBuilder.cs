@@ -11,6 +11,13 @@ public sealed class RowBuilder
 {
     private readonly int _rowIndex;
     private int _currentColumn;
+    private CellBuilder? _pendingCell;
+    private void AdvancePending()
+    {
+        if (_pendingCell is null) return;
+        _currentColumn += _pendingCell.ColumnSpanCount - 1;
+        _pendingCell = null;
+    }
     private readonly List<CellBuilder> _cellBuilders = [];
     private StyleBuilder? _rowStyleBuilder;
 
@@ -22,7 +29,7 @@ public sealed class RowBuilder
     /// <summary>
     /// 获取当前行指针所在的 0 基列索引。
     /// </summary>
-    public int CurrentColumn => _currentColumn;
+    public int CurrentColumn { get { AdvancePending(); return _currentColumn; } }
 
     /// <summary>
     /// 初始化 <see cref="RowBuilder"/> 类的新实例。
@@ -44,9 +51,11 @@ public sealed class RowBuilder
     /// <returns>单元格构建器。</returns>
     public CellBuilder Cell(object? value)
     {
+        AdvancePending();
         var builder = new CellBuilder(_rowIndex, _currentColumn).Value(value);
         _cellBuilders.Add(builder);
         _currentColumn++;
+        _pendingCell = builder;
         return builder;
     }
 
@@ -58,6 +67,7 @@ public sealed class RowBuilder
     /// <returns>当前 <see cref="RowBuilder"/> 实例，支持链式调用。</returns>
     public RowBuilder Cell(object? value, Action<CellBuilder> configure)
     {
+        AdvancePending();
         var builder = new CellBuilder(_rowIndex, _currentColumn).Value(value);
         configure(builder);
         _cellBuilders.Add(builder);
@@ -72,6 +82,7 @@ public sealed class RowBuilder
     /// <returns>当前 <see cref="RowBuilder"/> 实例，支持链式调用。</returns>
     public RowBuilder Cell(Action<CellBuilder> configure)
     {
+        AdvancePending();
         var builder = new CellBuilder(_rowIndex, _currentColumn);
         configure(builder);
         _cellBuilders.Add(builder);
@@ -86,6 +97,7 @@ public sealed class RowBuilder
     public RowBuilder Skip(int count = 1)
     {
         if (count < 1) throw new ArgumentOutOfRangeException(nameof(count));
+        AdvancePending();
         _currentColumn += count;
         return this;
     }
@@ -97,6 +109,7 @@ public sealed class RowBuilder
     public RowBuilder AtColumn(int columnIndex)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(columnIndex);
+        AdvancePending();
         _currentColumn = columnIndex;
         return this;
     }

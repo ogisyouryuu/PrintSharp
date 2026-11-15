@@ -248,6 +248,12 @@ public sealed class ClosedXmlRenderer
             case bool boolean:
                 xlCell.SetValue(boolean);
                 break;
+            case DateOnly date:
+                xlCell.SetValue(date.ToDateTime(TimeOnly.MinValue));
+                break;
+            case TimeOnly time:
+                xlCell.SetValue(time.ToTimeSpan());
+                break;
             case DateTime dt:
                 xlCell.SetValue(dt);
                 break;

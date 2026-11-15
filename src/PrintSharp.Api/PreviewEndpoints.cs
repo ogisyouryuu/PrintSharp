@@ -1,3 +1,4 @@
+using PrintSharp.Preview.AspNetCore;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
@@ -7,49 +8,12 @@ public static class PreviewEndpoints
 {
     public static void MapPreviewEndpoints(this WebApplication app)
     {
-        app.MapPost("/api/v1/previews", (HttpContext context, PrintGenerationService service, PreviewStore store) => Create(context, service, store, false));
-        app.MapPost("/api/v1/previews/upload", (HttpContext context, PrintGenerationService service, PreviewStore store) => Create(context, service, store, true));
-        app.MapGet("/api/v1/previews/{id}", (string id, HttpContext context, PreviewStore store) =>
-        {
-            var entry = store.Get(id, context.User);
-            return Cached(context, entry, entry.Manifest, "manifest");
-        });
-        app.MapGet("/api/v1/previews/{id}/pages/{pageNumber:int}", (string id, int pageNumber, HttpContext context, PreviewStore store) =>
-        {
-            var entry = store.Get(id, context.User);
-            if (pageNumber < 1 || pageNumber > entry.Pages.Length)
-                throw new PrintValidationException("pageNumber", "page_out_of_range", "Page number is outside the document.", 404);
-            return Cached(context, entry, entry.Pages[pageNumber - 1], $"page-{pageNumber}");
-        });
-        app.MapGet("/api/v1/previews/{id}/text", (string id, HttpContext context, PreviewStore store) =>
-        {
-            var entry = store.Get(id, context.User);
-            return Cached(context, entry, entry.TextIndex, "text");
-        });
-        app.MapGet("/api/v1/previews/{id}/pdf", (string id, HttpContext context, PreviewStore store) =>
-        {
-            var entry = store.Get(id, context.User);
-            context.Response.Headers.CacheControl = "private, no-store";
-            return Results.File(entry.Pdf, "application/pdf", "document.pdf");
-        });
-        app.MapDelete("/api/v1/previews/{id}", (string id, HttpContext context, PreviewStore store) =>
-        {
-            store.Delete(id, context.User);
-            return Results.NoContent();
-        });
+        app.MapPost("/api/v1/previews", (HttpContext context, PrintGenerationService service, IPrintPreviewStore store) => Create(context, service, store, false));
+        app.MapPost("/api/v1/previews/upload", (HttpContext context, PrintGenerationService service, IPrintPreviewStore store) => Create(context, service, store, true));
+        app.MapPrintSharpPreview("/api/v1/previews");
     }
 
-    private static IResult Cached(HttpContext context, PreviewEntry entry, byte[] bytes, string part)
-    {
-        string tag = $"\"{entry.Revision}-{part}\"";
-        context.Response.Headers.ETag = tag;
-        context.Response.Headers.CacheControl = "private, no-cache";
-        if (context.Request.Headers.IfNoneMatch.Any(v => v?.Split(',').Any(t => t.Trim() == tag || t.Trim() == "W/" + tag || t.Trim() == "*") == true))
-            return Results.StatusCode(304);
-        return Results.Bytes(bytes, "application/json");
-    }
-
-    private static async Task<IResult> Create(HttpContext context, PrintGenerationService service, PreviewStore store, bool upload)
+    private static async Task<IResult> Create(HttpContext context, PrintGenerationService service, IPrintPreviewStore store, bool upload)
     {
         var options = context.RequestServices.GetRequiredService<IOptions<PrintApiOptions>>().Value;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
@@ -58,7 +22,7 @@ public static class PreviewEndpoints
         if (upload)
         {
             var (template, data) = await MultipartPrintRequestReader.ReadAsync(context.Request, options, timeout.Token);
-            entry = await service.CreatePreviewAsync(template, data, document => store.Add(document, context.User, timeout.Token), timeout.Token);
+            entry = await service.CreatePreviewAsync(template, data, document => { var session = store.Create(document, context.User, timeout.Token); return store.Get(session.DocumentId, context.User); }, timeout.Token);
         }
         else
         {
@@ -75,7 +39,7 @@ public static class PreviewEndpoints
             body.Position = 0;
             var request = await JsonSerializer.DeserializeAsync<PrintRequest>(body, new JsonSerializerOptions(JsonSerializerDefaults.Web), timeout.Token)
                 ?? throw new PrintValidationException("request", "required", "Request is required.");
-            entry = await service.CreatePreviewAsync(request, document => store.Add(document, context.User, timeout.Token), timeout.Token);
+            entry = await service.CreatePreviewAsync(request, document => { var session = store.Create(document, context.User, timeout.Token); return store.Get(session.DocumentId, context.User); }, timeout.Token);
         }
         context.Response.StatusCode = 201;
         context.Response.Headers.Location = $"/api/v1/previews/{entry.Id}";

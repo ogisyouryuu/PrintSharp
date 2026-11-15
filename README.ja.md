@@ -17,7 +17,7 @@
 
 1 つの Excel ライクなグリッドドキュメントから、**Excel**、**PDF**、または **Windows プリンター**へ一貫して出力します。PrintSharp は自由な `X` / `Y` 座標ではなく、行・列・セル結合でレイアウトを保持します。Excel グリッドが常にレイアウトの基準です。
 
-> **ステータス:** 初期段階のライブラリ（`0.1.1`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
+> **ステータス:** 初期段階のライブラリ（`0.3.0`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
 
 HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 

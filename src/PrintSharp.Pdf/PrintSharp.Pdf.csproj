@@ -37,6 +37,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Include="buildTransitive/PrintSharp.Pdf.targets" Pack="true" PackagePath="buildTransitive/" />
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 

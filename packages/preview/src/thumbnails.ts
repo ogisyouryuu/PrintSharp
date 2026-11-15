@@ -1,7 +1,9 @@
+import type { PreviewLabels } from './labels.js';
 import type { Manifest } from './index.js';
 
 interface ThumbnailSlot { button: HTMLButtonElement; canvas: HTMLCanvasElement; ready: boolean; failed: boolean }
 interface ThumbnailOptions {
+  labels: PreviewLabels;
   host: HTMLElement; manifest: Manifest; page: number;
   select: (page: number) => void;
   render: (canvas: HTMLCanvasElement, page: number, scale: number, signal: AbortSignal) => Promise<void>;
@@ -55,7 +57,7 @@ export class ThumbnailSidebar {
       let slot = this.slots.get(page);
       if (!slot) {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'thumbnail';
-        button.dataset.thumbnailPage = String(page); button.setAttribute('aria-label', `第 ${page} 页缩略图`);
+        button.dataset.thumbnailPage = String(page); button.setAttribute('aria-label', this.options.labels.thumbnailPage.replace('{page}', String(page)));
         button.style.cssText = `position:absolute;top:${(page - 1) * this.rowHeight + 6}px;left:8px;right:8px;height:${this.rowHeight - 12}px`;
         const canvas = document.createElement('canvas'); canvas.width = canvas.height = 0; canvas.hidden = true;
         canvas.setAttribute('aria-hidden', 'true');

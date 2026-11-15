@@ -1,8 +1,10 @@
+import { resolveLabels } from './labels.js';
 /** 可視ページだけに透明な選択文字を配置し、コピー時は元の論理順を使用します。 */
 export class TextSelectionLayer {
     viewport;
     changed;
     copied;
+    labels;
     entries = new Map();
     measure = document.createElement('canvas').getContext('2d');
     lastText = '';
@@ -85,10 +87,11 @@ export class TextSelectionLayer {
             this.copied(text);
         }
     };
-    constructor(viewport, changed, copied = () => { }) {
+    constructor(viewport, changed, copied = () => { }, labels = resolveLabels()) {
         this.viewport = viewport;
         this.changed = changed;
         this.copied = copied;
+        this.labels = labels;
         document.addEventListener('selectionchange', this.onChange);
         document.addEventListener('copy', this.onCopy);
         viewport.addEventListener('pointerdown', this.onPointerDown);
@@ -146,7 +149,7 @@ export class TextSelectionLayer {
         if (!text)
             return;
         if (!navigator.clipboard?.writeText)
-            throw new Error('当前环境无法访问剪贴板，请使用 Ctrl+C / Command+C');
+            throw new Error(this.labels.clipboardUnavailable);
         await navigator.clipboard.writeText(text);
         this.copied(text);
     }
@@ -175,7 +178,7 @@ export class TextSelectionLayer {
         const layer = document.createElement('div');
         layer.className = 'text-layer';
         layer.hidden = !this.enabled;
-        layer.setAttribute('aria-label', `第 ${page.pageNumber} 页文字`);
+        layer.setAttribute('aria-label', this.labels.pageText.replace('{page}', String(page.pageNumber)));
         const entry = { canvas, page, layer, spans: [] };
         page.textRegions.forEach((region, cell) => {
             if (!region.boxes?.length)

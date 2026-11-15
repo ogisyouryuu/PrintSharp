@@ -10,3 +10,5 @@ await copyFile(new URL('../dist/thumbnails.js', import.meta.url), new URL('thumb
 await copyFile(new URL('../dist/search.js', import.meta.url), new URL('search.js', destination));
 
 await copyFile(new URL('../dist/selection.js', import.meta.url), new URL('selection.js', destination));
+
+await copyFile(new URL('../dist/labels.js', import.meta.url), new URL('labels.js', destination));

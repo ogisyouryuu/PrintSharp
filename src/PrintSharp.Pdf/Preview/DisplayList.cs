@@ -48,7 +48,7 @@ public sealed record DisplayGlyph(string ResourceId, float X, float Y, float Siz
 /// <summary>文書内で共有する輪郭または PNG 画像。</summary>
 public sealed record DisplayResource(string Kind, string Data);
 
-internal sealed record PdfGlyphRun(SKTypeface Typeface, float Size, float Skew, ushort[] Glyphs, SKPoint[] Positions);
+internal sealed record PdfGlyphRun(SKTypeface Typeface, float Size, float Skew, ushort[] Glyphs, SKPoint[] Positions, byte[]? Text, uint[]? Clusters);
 
 /// <summary>確定済みページとリソースを保持する文書。元の文書の変更を反映しません。</summary>
 public sealed class PreviewDocument
@@ -118,9 +118,20 @@ public sealed class PreviewDocument
                     using (var font = new SKFont(run.Typeface, run.Size) { SkewX = run.Skew, Subpixel = true, Edging = SKFontEdging.Antialias })
                     using (var builder = new SKTextBlobBuilder())
                     {
-                        var buffer = builder.AllocatePositionedRun(font, run.Glyphs.Length);
-                        buffer.SetGlyphs(run.Glyphs);
-                        buffer.SetPositions(run.Positions);
+                        if (run.Text is { } text && run.Clusters is { } clusters)
+                        {
+                            var buffer = builder.AllocatePositionedTextRun(font, run.Glyphs.Length, text.Length);
+                            buffer.SetGlyphs(run.Glyphs);
+                            buffer.SetPositions(run.Positions);
+                            buffer.SetText(text);
+                            buffer.SetClusters(clusters);
+                        }
+                        else
+                        {
+                            var buffer = builder.AllocatePositionedRun(font, run.Glyphs.Length);
+                            buffer.SetGlyphs(run.Glyphs);
+                            buffer.SetPositions(run.Positions);
+                        }
                         using var blob = builder.Build();
                         canvas.DrawText(blob, 0, 0, paint);
                     }

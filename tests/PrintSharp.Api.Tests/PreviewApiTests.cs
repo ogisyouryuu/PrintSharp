@@ -1,3 +1,4 @@
+using PrintSharp.Preview.AspNetCore;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -108,17 +109,17 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
     [Fact]
     public void StoreBoundsCapacityAndSeparatesOwners()
     {
-        using var store = new PreviewStore(Options.Create(new PrintApiOptions { MaxPreviewSessions = 1 }));
+        using var store = new PreviewStore(Options.Create(new PrintPreviewOptions { MaxSessions = 1 }));
         var document = SkiaPdfRenderer.Instance.CreatePreview(new Document());
         var alice = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "alice")], "test"));
         var bob = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "bob")], "test"));
         var entry = store.Add(document, alice, default);
         Assert.Equal(entry.Manifest.Length + entry.Pdf.Length + entry.Pages.Sum(p => p.Length) + entry.TextIndex.Length, entry.Size);
-        Assert.Equal(404, Assert.Throws<PrintValidationException>(() => store.Get(entry.Id, bob)).Status);
-        Assert.Equal(503, Assert.Throws<PrintValidationException>(() => store.Add(document, alice, default)).Status);
+        Assert.Equal(404, Assert.Throws<PreviewException>(() => store.Get(entry.Id, bob)).Status);
+        Assert.Equal(503, Assert.Throws<PreviewException>(() => store.Add(document, alice, default)).Status);
         store.Delete(entry.Id, alice);
         Assert.NotNull(store.Add(document, bob, default));
-        using var tiny = new PreviewStore(Options.Create(new PrintApiOptions { MaxPreviewDocumentBytes = 1 }));
-        Assert.Equal(413, Assert.Throws<PrintValidationException>(() => tiny.Add(document, alice, default)).Status);
+        using var tiny = new PreviewStore(Options.Create(new PrintPreviewOptions { MaxDocumentBytes = 1 }));
+        Assert.Equal(413, Assert.Throws<PreviewException>(() => tiny.Add(document, alice, default)).Status);
     }
 }

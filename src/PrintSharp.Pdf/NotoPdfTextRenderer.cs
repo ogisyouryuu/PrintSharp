@@ -64,8 +64,18 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTe
             var positions = run.GlyphPositions.ToArray();
             for (int i = 0; i < positions.Length; i++)
                 positions[i] = new(positions[i].X + content.X, positions[i].Y + content.Y + Math.Max(0, offset));
+            // PDF の ToUnicode を字形番号から推測せず、元の UTF-8 とクラスタを保持します。
+            var codePoints = run.CodePoints.ToArray();
+            var utf8 = new List<byte>();
+            var offsets = new uint[codePoints.Length];
+            for (int i = 0; i < codePoints.Length; i++)
+            {
+                offsets[i] = (uint)utf8.Count;
+                utf8.AddRange(System.Text.Encoding.UTF8.GetBytes(char.ConvertFromUtf32(codePoints[i])));
+            }
+            var clusters = run.Clusters.ToArray().Select(c => offsets[c - run.Start]).ToArray();
             builder.DrawGlyphRun(run.Typeface, run.Style.FontSize, font.Italic ? -0.2f : 0,
-                run.Glyphs.ToArray(), positions, run.Style.TextColor);
+                run.Glyphs.ToArray(), positions, run.Style.TextColor, utf8.ToArray(), clusters);
             using var skFont = new SKFont(run.Typeface, run.Style.FontSize);
             float baseline = content.Y + Math.Max(0, offset) + run.Line.YCoord + run.Line.BaseLine;
             using var paint = new SKPaint { Color = run.Style.TextColor };

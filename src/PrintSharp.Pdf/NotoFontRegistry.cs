@@ -17,11 +17,14 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
     public static new NotoFontRegistry Default => Shared.Value;
 
     /// <summary>指定したフォルダーから Noto フォントを読み込みます。</summary>
-    public NotoFontRegistry(string directory)
+    public NotoFontRegistry(string directory) : this(directory, null) { }
+
+    /// <summary>指定したフォントファミリーのみを読み込みます。</summary>
+    public NotoFontRegistry(string directory, IEnumerable<string>? families)
     {
         try
         {
-            foreach (var family in Families)
+            foreach (var family in (families ?? Families).Distinct())
                 foreach (var bold in new[] { false, true })
                 {
                     string extension = family.Contains("CJK", StringComparison.Ordinal) ? "otf" : "ttf";
@@ -33,11 +36,12 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
                 }
         }
         catch { Dispose(); throw; }
+        if (_faces.Count == 0) throw new ArgumentException("At least one font family is required.", nameof(families));
     }
 
     /// <inheritdoc/>
     public override SKTypeface TypefaceFromStyle(IStyle style, bool ignoreFontVariants) =>
-        _faces[(NormalizeFamily(style.FontFamily), style.FontWeight >= 600)];
+        _faces[(AvailableFamily(style.FontFamily), style.FontWeight >= 600)];
 
     /// <summary>論理フォント名を同梱フォントの名前に正規化します。</summary>
     public static string NormalizeFamily(string? family) => family?.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant() switch
@@ -51,8 +55,8 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
     /// <summary>結合文字を分断せず、各書記素を実際のグリフ収録状況で解決します。</summary>
     public IEnumerable<(string Text, string Family)> ResolveRuns(string text, string? family, bool bold)
     {
-        string preferred = NormalizeFamily(family);
-        string[] candidates = [preferred, .. Families.Where(f => f != preferred)];
+        string preferred = AvailableFamily(family);
+        string[] candidates = [preferred, .. _faces.Keys.Select(k => k.Family).Distinct().Where(f => f != preferred)];
         var elements = StringInfo.GetTextElementEnumerator(text);
         var run = new StringBuilder();
         string? current = null;
@@ -72,6 +76,12 @@ public sealed class NotoFontRegistry : FontMapper, IDisposable
             run.Append(element);
         }
         if (run.Length > 0) yield return (run.ToString(), current!);
+    }
+
+    private string AvailableFamily(string? family)
+    {
+        string normalized = NormalizeFamily(family);
+        return _faces.ContainsKey((normalized, false)) ? normalized : _faces.Keys.First().Family;
     }
 
     private SKFont GetFont(string family, bool bold) => _fonts[(family, bold)];

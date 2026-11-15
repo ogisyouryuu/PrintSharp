@@ -1,3 +1,7 @@
+import { resolveLabels } from './labels.js';
+import type { PreviewLabels } from './labels.js';
+export { zhCN, en, ja } from './labels.js';
+export type { PreviewLabels } from './labels.js';
 import { TextSelectionLayer } from './selection.js';
 import { PreviewSearch, type TextIndex, type TextRegion } from './search.js';
 export type { TextBox, TextRegion, TextIndex, SearchState } from './search.js';
@@ -156,7 +160,7 @@ export interface PreviewOptions {
   source: PreviewSource; initialPage?: number; zoom?: Zoom; toolbar?: boolean;
   cachePages?: number; maxCanvasPixels?: number;
   textSelection?: boolean; thumbnails?: boolean; viewMode?: ViewMode; maxCacheBytes?: number; maxTotalCanvasPixels?: number;
-  labels?: Partial<Record<'first' | 'previous' | 'next' | 'last' | 'zoomIn' | 'zoomOut' | 'fitWidth' | 'fitPage' | 'retry' | 'loading' | 'empty' | 'singlePage' | 'continuous' | 'thumbnails' | 'search' | 'textSelection' | 'copy', string>>;
+  labels?: Partial<PreviewLabels>;
 }
 const styles = `
 .text-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;text-align:left;user-select:text}.text-region{position:absolute;overflow:hidden;pointer-events:none}.text-cluster{position:absolute;color:transparent;white-space:pre;font-family:sans-serif;transform-origin:top left;cursor:text;pointer-events:auto;user-select:text;unicode-bidi:isolate}.text-cluster::selection{background:#3185ff66;color:transparent}.search-overlay{z-index:1}
@@ -222,11 +226,11 @@ export class PrintPreview extends EventTarget {
     if (!['single-page', 'continuous'].includes(this.mode)) throw new PreviewError('Invalid view mode');
     this.zoomMode = options.zoom ?? 'fit-width';
     this.validateZoom(this.zoomMode);
-    this.labels = { first: '首页', previous: '上一页', next: '下一页', last: '末页', zoomIn: '放大', zoomOut: '缩小', fitWidth: '适合宽度', fitPage: '整页', retry: '重试', loading: '正在加载…', empty: '没有可预览的页面', singlePage: '单页', continuous: '连续滚动', thumbnails: '缩略图', search: '搜索', textSelection: '文字选择', copy: '复制', ...options.labels };
+    this.labels = resolveLabels(options.labels);
     this.host = document.createElement('div'); this.host.style.height = '100%';
     const root = this.host.attachShadow({ mode: 'open' });
     const style = document.createElement('style'); style.textContent = styles; root.append(style);
-    const shell = document.createElement('section'); shell.className = 'preview'; shell.setAttribute('aria-label', 'PrintSharp Preview'); root.append(shell);
+    const shell = document.createElement('section'); shell.className = 'preview'; shell.setAttribute('aria-label', this.labels.previewTitle); root.append(shell);
     const toolbar = document.createElement('div'); toolbar.className = 'toolbar'; toolbar.setAttribute('role', 'toolbar');
     toolbar.hidden = options.toolbar === false;
     if (options.toolbar !== false) shell.append(toolbar);
@@ -236,7 +240,7 @@ export class PrintPreview extends EventTarget {
     };
     const go = (page: number) => { void this.goToPage(page).catch(() => {}); };
     action('first', () => go(1)); action('previous', () => go(this.pageNumber - 1));
-    this.pageInput = document.createElement('input'); this.pageInput.type = 'number'; this.pageInput.min = '1'; this.pageInput.setAttribute('aria-label', '页码'); toolbar.append(this.pageInput);
+    this.pageInput = document.createElement('input'); this.pageInput.type = 'number'; this.pageInput.min = '1'; this.pageInput.setAttribute('aria-label', this.labels.pageNumber); toolbar.append(this.pageInput);
     this.pageInput.addEventListener('change', () => go(Number(this.pageInput.value)));
     this.total = document.createElement('span'); toolbar.append(this.total);
     action('next', () => go(this.pageNumber + 1)); action('last', () => go(this.pageCount));
@@ -255,13 +259,13 @@ export class PrintPreview extends EventTarget {
     this.copyStatus.style.cssText = 'max-height:120px;overflow:auto;white-space:pre-wrap;user-select:text'; shell.append(this.copyStatus);
     const content = document.createElement('div'); content.className = 'preview-content'; shell.append(content);
     this.sidebarHost = document.createElement('aside'); this.sidebarHost.className = 'thumbnail-sidebar';
-    this.sidebarHost.setAttribute('aria-label', '页面缩略图'); this.sidebarHost.hidden = !this.thumbnailsOpen; content.append(this.sidebarHost);
+    this.sidebarHost.setAttribute('aria-label', this.labels.thumbnails); this.sidebarHost.hidden = !this.thumbnailsOpen; content.append(this.sidebarHost);
     this.viewport = document.createElement('div'); this.viewport.className = 'viewport'; this.viewport.tabIndex = 0; content.append(this.viewport);
     this.canvas = document.createElement('canvas'); this.canvas.className = 'page'; this.canvas.hidden = true; this.singlePage.className = 'single-page'; this.singlePage.append(this.canvas); this.viewport.append(this.singlePage);
     const searchHost = document.createElement('div'); shell.insertBefore(searchHost, content);
-    this.searchPanel = new PreviewSearch({ host: searchHost, viewport: this.viewport, manifest: () => this.manifest,
+    this.searchPanel = new PreviewSearch({ labels: this.labels, host: searchHost, viewport: this.viewport, manifest: () => this.manifest,
       ready: () => this.ready, load: options.source.getTextIndex?.bind(options.source), navigate: page => this.goToPage(page), changed: state => this.emit('searchchange', state) });
-    this.selectionLayer = new TextSelectionLayer(this.viewport, text => { this.emit('selectionchange', text); }, text => this.showCopyStatus(`已复制：${text}`));
+    this.selectionLayer = new TextSelectionLayer(this.viewport, text => { this.emit('selectionchange', text); }, text => this.showCopyStatus(this.labels.copied + text), this.labels);
     this.selectionLayer.setEnabled(this.selectionEnabled);
     this.viewport.addEventListener('keydown', event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -293,7 +297,7 @@ export class PrintPreview extends EventTarget {
     this.assertAlive();
     this.copyStatus.textContent = '';
     clearTimeout(this.copyStatusTimer);
-    if (!this.selectedText) { this.showCopyStatus('请先选择要复制的文字'); return; }
+    if (!this.selectedText) { this.showCopyStatus(this.labels.selectText); return; }
     await this.selectionLayer.copy();
   }
   private showCopyStatus(message: string): void {
@@ -378,7 +382,7 @@ export class PrintPreview extends EventTarget {
         this.viewport.scrollLeft = anchor.x * parseFloat(this.canvas.style.width) - this.viewport.clientWidth / 2;
         this.viewport.scrollTop = anchor.y * parseFloat(this.canvas.style.height) - this.viewport.clientHeight / 2;
       }
-      this.canvas.setAttribute('aria-label', `Page ${pageNumber} / ${this.pageCount}`);
+      this.canvas.setAttribute('aria-label', this.labels.pageDescription.replace('{page}', String(pageNumber)).replace('{total}', String(this.pageCount)));
       this.updateControls(); this.emit('pagechange', pageNumber); this.emit('zoomchange', { zoom: this.zoomMode, scale: this.scale });
     } catch (error) {
       if (signal.aborted || this.destroyed) return;
@@ -408,7 +412,7 @@ export class PrintPreview extends EventTarget {
   }
   private mountThumbnails(): void {
     this.sidebar?.destroy();
-    this.sidebar = new ThumbnailSidebar({ host: this.sidebarHost, manifest: this.manifest!, page: this.pageNumber,
+    this.sidebar = new ThumbnailSidebar({ labels: this.labels, host: this.sidebarHost, manifest: this.manifest!, page: this.pageNumber,
       select: page => { void this.goToPage(page).catch(() => {}); },
       render: async (canvas, page, scale, signal) => {
         // 縮略図は本文の LRU を追い出さず、表示中の小さな画布だけを保持します。
@@ -429,7 +433,7 @@ export class PrintPreview extends EventTarget {
   private mountContinuous(): void {
     this.active?.abort(); this.sequence++; this.singlePage.remove(); this.canvas.width = this.canvas.height = 0; this.current = undefined;
     this.status.textContent = '';
-    this.continuous = new ContinuousViewport({ viewport: this.viewport, manifest: this.manifest!, zoom: () => this.zoomMode,
+    this.continuous = new ContinuousViewport({ labels: this.labels, viewport: this.viewport, manifest: this.manifest!, zoom: () => this.zoomMode,
       maxPixels: this.options.maxTotalCanvasPixels ?? 24_000_000,
       render: async (canvas, page, scale, signal, budget) => {
         const response = await this.loadPage(page, signal);
@@ -498,8 +502,8 @@ export class PrintPreview extends EventTarget {
 export function createPrintPreview(container: HTMLElement, options: PreviewOptions): PrintPreview { return new PrintPreview(container, options); }
 
 /** Blazor には描画結果のイベントだけを返します。 */
-export function mountBlazor(container: HTMLElement, baseUrl: string, documentId: string, initialPage: number, zoom: Zoom, callback: { invokeMethodAsync(method: string, value: unknown): Promise<unknown> }, viewMode: ViewMode = 'single-page', thumbnails = false, textSelection = true): PrintPreview {
-  const preview = createPrintPreview(container, { source: createHttpPreviewSource({ baseUrl, documentId }), initialPage, zoom, viewMode, thumbnails, textSelection });
+export function mountBlazor(container: HTMLElement, baseUrl: string, documentId: string, initialPage: number, zoom: Zoom, callback: { invokeMethodAsync(method: string, ...args: unknown[]): Promise<unknown> }, viewMode: ViewMode = 'single-page', thumbnails = false, textSelection = true, toolbar = true, labels?: PreviewOptions['labels'], headers?: Record<string, string>, credentials: RequestCredentials = 'same-origin'): PrintPreview {
+  const preview = createPrintPreview(container, { source: createHttpPreviewSource({ baseUrl, documentId, requestInit: { headers: headers ?? {}, credentials } }), initialPage, zoom, viewMode, thumbnails, textSelection, toolbar, labels: labels ?? undefined });
   preview.addEventListener('selectionchange', event => { void callback.invokeMethodAsync('OnSelectionChanged', (event as CustomEvent).detail).catch(() => {}); });
   preview.addEventListener('textselectionchange', event => { void callback.invokeMethodAsync('OnTextSelectionChanged', (event as CustomEvent).detail).catch(() => {}); });
   preview.addEventListener('searchchange', event => { void callback.invokeMethodAsync('OnSearchChanged', (event as CustomEvent).detail).catch(() => {}); });
@@ -507,5 +511,14 @@ export function mountBlazor(container: HTMLElement, baseUrl: string, documentId:
   preview.addEventListener('thumbnailschange', event => { void callback.invokeMethodAsync('OnThumbnailsChanged', (event as CustomEvent).detail).catch(() => {}); });
   preview.addEventListener('viewmodechange', event => { void callback.invokeMethodAsync('OnViewModeChanged', (event as CustomEvent).detail).catch(() => {}); });
   preview.addEventListener('error', event => { void callback.invokeMethodAsync('OnPreviewError', String((event as CustomEvent).detail)).catch(() => {}); });
+  preview.addEventListener('zoomchange', event => { void callback.invokeMethodAsync('OnZoomChanged', (event as CustomEvent).detail.scale).catch(() => {}); });
+  preview.addEventListener('loadingchange', event => { void callback.invokeMethodAsync('OnLoadingChanged', (event as CustomEvent).detail).catch(() => {}); });
+  void callback.invokeMethodAsync('OnLoadingChanged', true).catch(() => {});
+  void preview.ready.then(async () => {
+    await callback.invokeMethodAsync('OnPageCountChanged', preview.pageCount);
+    await callback.invokeMethodAsync('OnZoomChanged', preview.actualZoom);
+    await callback.invokeMethodAsync('OnLoadingChanged', false);
+    await callback.invokeMethodAsync('OnReady');
+  }).catch(() => { void callback.invokeMethodAsync('OnLoadingChanged', false).catch(() => {}); });
   return preview;
 }

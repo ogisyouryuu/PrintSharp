@@ -61,7 +61,7 @@ export class ThumbnailSidebar {
                 button.type = 'button';
                 button.className = 'thumbnail';
                 button.dataset.thumbnailPage = String(page);
-                button.setAttribute('aria-label', `第 ${page} 页缩略图`);
+                button.setAttribute('aria-label', this.options.labels.thumbnailPage.replace('{page}', String(page)));
                 button.style.cssText = `position:absolute;top:${(page - 1) * this.rowHeight + 6}px;left:8px;right:8px;height:${this.rowHeight - 12}px`;
                 const canvas = document.createElement('canvas');
                 canvas.width = canvas.height = 0;

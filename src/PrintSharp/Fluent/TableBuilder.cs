@@ -120,6 +120,8 @@ public sealed class TableBuilder
 
         var rowBuilder = new RowBuilder(_currentRow, _startColumn);
         configure(rowBuilder);
+        if (rowBuilder.BuildRowStyle() is { } rowStyle)
+            rowDef.DefaultStyle = (rowDef.DefaultStyle ?? CellStyle.Default).MergeWith(rowStyle);
 
         foreach (var cell in rowBuilder.BuildCells())
         {
@@ -151,6 +153,8 @@ public sealed class TableBuilder
 
         var rowBuilder = new RowBuilder(_currentRow, _startColumn);
         configure(rowBuilder);
+        if (rowBuilder.BuildRowStyle() is { } rowStyle)
+            rowDef.DefaultStyle = (rowDef.DefaultStyle ?? CellStyle.Default).MergeWith(rowStyle);
 
         foreach (var cell in rowBuilder.BuildCells())
         {

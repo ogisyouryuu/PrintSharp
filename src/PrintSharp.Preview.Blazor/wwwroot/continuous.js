@@ -130,11 +130,11 @@ export class ContinuousViewport {
             if (!this.slots.has(i + 1)) {
                 const element = document.createElement('div'), canvas = document.createElement('canvas');
                 element.dataset.page = String(i + 1);
-                element.setAttribute('aria-label', `Page ${i + 1} / ${this.offsets.length}`);
+                element.setAttribute('aria-label', this.options.labels.pageDescription.replace('{page}', String(i + 1)).replace('{total}', String(this.offsets.length)));
                 canvas.className = 'page';
                 canvas.width = canvas.height = 0;
                 canvas.hidden = true;
-                canvas.setAttribute('aria-label', `Page ${i + 1} / ${this.offsets.length}`);
+                canvas.setAttribute('aria-label', this.options.labels.pageDescription.replace('{page}', String(i + 1)).replace('{total}', String(this.offsets.length)));
                 element.append(canvas);
                 const next = [...this.stage.children].find(child => Number(child.dataset.page) > i + 1);
                 this.stage.insertBefore(element, next ?? null);

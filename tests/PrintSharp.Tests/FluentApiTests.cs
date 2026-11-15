@@ -8,6 +8,24 @@ namespace PrintSharp.Tests;
 
 public class FluentApiTests
 {
+    [Fact]
+    public void ChainedColumnSpanAdvancesBeforeNextCellAndSkip()
+    {
+        var document = Document.Create(d => d.Page(p => p.Columns(100, 100, 100, 100, 100)
+            .Row(20, row => { row.Cell("total").ColumnSpan(2); row.Cell("next"); row.Skip(); row.Cell("last"); })));
+        Assert.Equal(new[] { 0, 2, 4 }, document.Pages[0].Cells.Select(c => c.Column));
+    }
+    [Fact]
+    public void ReportBodyKeepsRowDefaultStyle()
+    {
+        var document = Document.Create(d => d.Page(p => p.Settings(s => s.PaperKind(PaperKind.A4)).Columns(100).Report(report =>
+            report.Body(new[] { "value" }, 20, (row, value) => { row.DefaultStyle(s => s.Background("#BFDBFE").Bold()); row.Cell(value); }))));
+        var layout = PrintSharp.Layout.GridLayoutEngine.Instance.CalculateDocument(document);
+        var cell = Assert.Single(Assert.Single(layout.Pages).Cells);
+        Assert.Equal(ColorSpec.FromHex("#BFDBFE"), cell.EffectiveStyle.BackColor);
+        Assert.True(cell.EffectiveStyle.Font!.Bold);
+    }
+
     private record Product(string Name, int Quantity, decimal Price);
 
     [Fact]

@@ -8,6 +8,20 @@ namespace PrintSharp.Excel.Tests;
 public class ClosedXmlRendererTests
 {
     [Fact]
+    public void DateOnlyAndTimeOnlyRemainTypedExcelValues()
+    {
+        var document = Document.Create(d => d.Page(p => p.Columns(100, 100).Rows(24)
+            .Cell("A1", c => c.Value(new DateOnly(2026, 11, 14)).Format("yyyy/MM/dd"))
+            .Cell("B1", c => c.Value(new TimeOnly(13, 45)).Format("hh:mm"))));
+        using var workbook = document.ToExcelWorkbook();
+        var sheet = workbook.Worksheet(1);
+        Assert.Equal(XLDataType.DateTime, sheet.Cell("A1").DataType);
+        Assert.Equal(new DateTime(2026, 11, 14), sheet.Cell("A1").GetDateTime());
+        Assert.Equal(XLDataType.TimeSpan, sheet.Cell("B1").DataType);
+        Assert.Equal(new TimeSpan(13, 45, 0), sheet.Cell("B1").GetTimeSpan());
+    }
+
+    [Fact]
     public void RenderToWorkbook_ShouldProduceValidWorkbookWithMergedCellsAndStyles()
     {
         var doc = Document.Create(d =>

@@ -1,8 +1,10 @@
+import type { PreviewLabels } from './labels.js';
 import type { Manifest, Zoom } from './index.js';
 
 interface Slot { element: HTMLDivElement; canvas: HTMLCanvasElement; renderedScale: number; failed: boolean; error?: unknown }
 interface Anchor { page: number; x: number; y: number }
 interface ContinuousOptions {
+  labels: PreviewLabels;
   viewport: HTMLElement; manifest: Manifest; zoom: () => Zoom; maxPixels: number;
   render: (canvas: HTMLCanvasElement, page: number, scale: number, signal: AbortSignal, budget: number) => Promise<void>;
   changed: (page: number, scale: number) => void;
@@ -117,9 +119,9 @@ export class ContinuousViewport {
     for (const page of this.slots.keys()) if (page < first + 1 || page > last + 1) this.release(page);
     for (let i = first; i <= last; i++) if (!this.slots.has(i + 1)) {
       const element = document.createElement('div'), canvas = document.createElement('canvas');
-      element.dataset.page = String(i + 1); element.setAttribute('aria-label', `Page ${i + 1} / ${this.offsets.length}`);
+      element.dataset.page = String(i + 1); element.setAttribute('aria-label', this.options.labels.pageDescription.replace('{page}', String(i + 1)).replace('{total}', String(this.offsets.length)));
       canvas.className = 'page'; canvas.width = canvas.height = 0; canvas.hidden = true;
-      canvas.setAttribute('aria-label', `Page ${i + 1} / ${this.offsets.length}`);
+      canvas.setAttribute('aria-label', this.options.labels.pageDescription.replace('{page}', String(i + 1)).replace('{total}', String(this.offsets.length)));
       element.append(canvas);
       const next = [...this.stage.children].find(child => Number((child as HTMLElement).dataset.page) > i + 1);
       this.stage.insertBefore(element, next ?? null);

@@ -1,3 +1,4 @@
+using PrintSharp.Preview.AspNetCore;
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.Features;
@@ -11,7 +12,14 @@ builder.WebHost.ConfigureKestrel((context, options) => options.Limits.MaxRequest
     context.Configuration.GetValue<long?>("PrintApi:MaxRequestBytes") ?? new PrintApiOptions().MaxRequestBytes);
 builder.Services.AddSingleton<PrintGenerationService>();
 builder.Services.AddSingleton<IPrintGenerationService>(sp => sp.GetRequiredService<PrintGenerationService>());
-builder.Services.AddSingleton<PreviewStore>();
+builder.Services.AddPrintSharpPreview();
+builder.Services.AddOptions<PrintPreviewOptions>().Configure<IOptions<PrintApiOptions>>((preview, api) =>
+{
+    preview.TimeToLive = TimeSpan.FromSeconds(api.Value.PreviewTtlSeconds);
+    preview.MaxSessions = api.Value.MaxPreviewSessions;
+    preview.MaxCacheBytes = api.Value.MaxPreviewCacheBytes;
+    preview.MaxDocumentBytes = api.Value.MaxPreviewDocumentBytes;
+});
 builder.Services.AddSingleton(NotoFontRegistry.Default);
 var app = builder.Build();
 
@@ -34,6 +42,7 @@ app.Use(async (context, next) =>
         var (status, error) = exception switch
         {
             PrintValidationException e => (e.Status, e.Error),
+            PreviewException e => (e.Status, new ValidationError("preview", "preview_failed", e.Message)),
             BadHttpRequestException e => (e.StatusCode, new ValidationError("request", e.StatusCode == 413 ? "limit_exceeded" : "invalid_request", "Invalid request body.")),
             JsonException => (400, new ValidationError("request", "invalid_json", "Request is not valid JSON.")),
             OperationCanceledException => (context.RequestAborted.IsCancellationRequested ? 499 : 504, new ValidationError("request", "cancelled", "Request was cancelled or timed out.")),
