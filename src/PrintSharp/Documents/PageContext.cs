@@ -3,6 +3,8 @@ namespace PrintSharp.Documents;
 /// <summary>整个文档分页完成后的物理页信息。</summary>
 public sealed record PageContext
 {
+    /// <summary>物理ページに分割せず、明細全体を連続して出力する場合は true です。</summary>
+    public bool IsContinuous { get; init; }
     /// <summary>原始逻辑页面。</summary>
     public required Page SourcePage { get; init; }
     /// <summary>文档物理页码，从 1 开始。</summary>

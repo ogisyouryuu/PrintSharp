@@ -137,7 +137,7 @@ public sealed class DocumentPaginator
                 throw new InvalidOperationException("Pagination header/footer row counts exceed the page's row range.");
             var target = CopyPage(source, Enumerable.Range(0, rows));
             target.Pagination = source.Pagination;
-            var context = new PageContext { SourcePage = source, CurrentPageNumber = 1, PageCount = 1,
+            var context = new PageContext { SourcePage = source, CurrentPageNumber = 1, PageCount = 1, IsContinuous = true,
                 BodyRowOffset = 0, BodyRowCount = rows - (source.Pagination?.HeaderRowCount ?? 0) - (source.Pagination?.FooterRowCount ?? 0) };
             target.Context = context;
             for (int c = 0; c < target.Cells.Count; c++)

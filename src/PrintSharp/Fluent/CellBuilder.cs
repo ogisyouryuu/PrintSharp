@@ -1,4 +1,5 @@
 using PrintSharp.Cells;
+using PrintSharp.Documents;
 using PrintSharp.Styles;
 
 namespace PrintSharp.Fluent;
@@ -90,6 +91,28 @@ public sealed class CellBuilder
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(formula);
         _value = new FormulaValue(formula, value);
+        _type = CellType.Formula;
+        return this;
+    }
+
+    /// <summary>
+    /// 帳票の明細列を合計します。列番号は 0 基準で、ヘッダーまたはフッターに配置します。
+    /// 出力ページの明細範囲を使用し、空の場合は =0 を出力します。
+    /// 計算済みの値には、ページごとの小計を返す PageValue も指定できます。
+    /// </summary>
+    public CellBuilder SumBodyColumn(int column, object? value)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(column);
+        string letter = CellReference.ToColumnLetter(column);
+        _value = new PageValue(context =>
+        {
+            var pagination = context.SourcePage.Pagination
+                ?? throw new InvalidOperationException("SumBodyColumn requires a report with a body region.");
+            if (context.BodyRowCount == 0) return new FormulaValue("=0", 0);
+            int first = pagination.HeaderRowCount + 1;
+            string formula = $"=SUM({letter}{first}:{letter}{first + context.BodyRowCount - 1})";
+            return new FormulaValue(formula, value is PageValue deferred ? deferred.Resolve(context) : value);
+        });
         _type = CellType.Formula;
         return this;
     }

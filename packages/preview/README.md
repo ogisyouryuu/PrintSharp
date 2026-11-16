@@ -2,7 +2,7 @@
 
 TypeScript Canvas preview for PrintSharp. The server supplies positioned glyph outlines; the browser does not reshape or wrap text. Includes a virtualized thumbnail sidebar, continuous scrolling, full-document text search, pagination, zoom, fit width/page, bounded page caching, cancellation, and a Vue 3 wrapper.
 
-Install with `npm i @printsharp/preview` after release. Version tags publish this package through npm trusted publishing. Local builds can be installed using `npm pack`.
+Install with `npm i @printsharp/preview`. Version tags publish this package through npm trusted publishing. Local builds can be installed using `npm pack`.
 
 ```powershell
 npm ci
@@ -22,7 +22,7 @@ const preview = createPrintPreview(document.querySelector<HTMLElement>('#preview
 await preview.ready;
 ```
 
-Give the container a fixed height. Call `destroy()` when finished; server sessions expire separately or can be deleted explicitly. Vue consumers import `PrintSharpPreview` from `@printsharp/preview/vue`. Blazor uses the `PrintSharp.Preview.Blazor` project; `npm run build` updates its bundled JS.
+Give the container a fixed height. Call `destroy()` when finished; server sessions expire separately or can be deleted explicitly. Vue consumers import `PrintSharpPreview` from `@printsharp/preview/vue`. Blazor uses the `PrintSharp.Preview.Blazor` NuGet package; `npm run build` updates its bundled JS.
 
 Run `npx playwright install chromium` once, then `npm test`. Tests require .NET 11 to generate the multilingual fixture.
 

@@ -10,6 +10,57 @@ namespace PrintSharp.Excel.Tests;
 public sealed class FormulaAndSingleSheetTests
 {
     [Theory]
+    [InlineData(0, 1, ExcelReportLayout.SingleSheet)]
+    [InlineData(50, 1, ExcelReportLayout.SingleSheet)]
+    [InlineData(50, 2, ExcelReportLayout.SingleSheet)]
+    [InlineData(0, 2, ExcelReportLayout.PerPhysicalPage)]
+    [InlineData(50, 2, ExcelReportLayout.PerPhysicalPage)]
+    public void BodySumUsesOutputRowsAndSurvivesRecalculation(int count, int headerRows, ExcelReportLayout layout)
+    {
+        var items = Enumerable.Range(1, count).ToArray();
+        var doc = Document.Create(d => d.Page(p => p.Settings(s => s.PaperKind(PaperKind.A4)).Columns(80, 80)
+            .Report(r => r.Header(h => h.Rows(Enumerable.Repeat(20f, headerRows).ToArray()).Cell("A1", "Header"))
+                .Body(items, 20, (row, item) => { row.Cell(item); row.Cell(item * 1000); })
+                .Footer(f => f.Rows(20).Cell(0, 1, c => c.SumBodyColumn(1,
+                    new PageValue(context => items.Skip(context.BodyRowOffset).Take(context.BodyRowCount).Sum(x => x * 1000))))))));
+
+        using var book = new XLWorkbook(new MemoryStream(doc.ToExcelBytes(new() { ReportLayout = layout })));
+        int offset = 0;
+        foreach (var sheet in book.Worksheets)
+        {
+            int last = sheet.LastRowUsed()!.RowNumber();
+            int bodyCount = last - headerRows - 1;
+            var total = sheet.Cell(last, 2);
+            int expected = items.Skip(offset).Take(bodyCount).Sum(x => x * 1000);
+            Assert.Equal(bodyCount == 0 ? "0" : $"SUM(B{headerRows + 1}:B{last - 1})", total.FormulaA1);
+            Assert.Equal(expected, total.CachedValue.GetNumber());
+            sheet.RecalculateAllFormulas();
+            Assert.Equal(expected, total.GetDouble());
+            offset += bodyCount;
+        }
+        Assert.Equal(count, offset);
+        Assert.IsType<PageValue>(doc.Pages[0].Cells.Last().Value);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(50)]
+    public void ContinuousContextCanSuppressPageSubtotal(int count)
+    {
+        var doc = Document.Create(d => d.Page(p => p.Settings(s => s.PaperKind(PaperKind.A4)).Columns(100)
+            .Report(r => r.Header(h => h.Rows(20).Cell("A1", "Header"))
+                .Body(Enumerable.Range(1, count), 20, (row, item) => row.Cell(item))
+                .Footer(f => f.Rows(20).Cell(0, 0, c => c.Value(new PageValue(context =>
+                    context.IsContinuous ? "" : $"Page {context.BodyRowCount}")))))));
+        using var continuous = doc.ToExcelWorkbook(new() { ReportLayout = ExcelReportLayout.SingleSheet });
+        Assert.True(continuous.Worksheet(1).Cell(count + 2, 1).IsEmpty());
+        using var physical = doc.ToExcelWorkbook();
+        foreach (var sheet in physical.Worksheets)
+            Assert.StartsWith("Page ", sheet.LastRowUsed()!.Cell(1).GetString());
+        Assert.All(doc.Paginate().Pages, page => Assert.False(page.Context!.IsContinuous));
+    }
+
+    [Theory]
     [InlineData(1234.5, "n", "1234.5")]
     [InlineData("日本語", "str", "日本語")]
     [InlineData(true, "b", "1")]

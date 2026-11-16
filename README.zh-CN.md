@@ -17,7 +17,7 @@
 
 使用一份类 Excel 的网格文档，同时稳定输出为 **Excel**、**PDF** 或 **Windows 打印机**。PrintSharp 以行、列和单元格跨度维护布局，而非自由的 `X` / `Y` 坐标；Excel 网格始终是布局的来源。
 
-> **状态：** 早期库（`0.3.0`）。稳定版本前，公开 API 和渲染行为可能会演进。
+> **状态：** 早期库（`0.4.1`）。稳定版本前，公开 API 和渲染行为可能会演进。
 
 HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
@@ -32,7 +32,7 @@ PDF 与 Canvas 共用不可变绘制计划，包括物理分页、换行、内�
 - **搜索：** 按需获取 `/text` 索引，支持不区分大小写的字面搜索、结果计数、上一处/下一处和文字框高亮。关键词最多 256 个 UTF-16 代码单元，结果最多 1,000 处。
 - **选择与复制：** 拖选后按 Ctrl+C / Command+C 或点击“复制”，保留多语言逻辑原文顺序。鼠标起止位置按实际文字框计算；demo 的选区摘要预留固定高度，防止拖选时纸张移动。
 
-预览 npm 包和 Blazor RCL 目前通过源码接入，尚未发布到 npm / NuGet。Vue 使用 `@printsharp/preview/vue`，Blazor 引用 `src/PrintSharp.Preview.Blazor`。方法、双向绑定、事件和部署文件见[预览包 README](packages/preview/README.md)。
+使用 `npm i @printsharp/preview` 安装预览包，使用 `dotnet add package PrintSharp.Preview.Blazor` 安装 Blazor 组件。Vue 入口为 `@printsharp/preview/vue`，ASP.NET Core 服务端安装 `PrintSharp.Preview.AspNetCore`。API 和部署方式见[预览包 README](packages/preview/README.md)。
 
 先在 5080 端口启动 API，再另开终端运行任一 demo：
 
@@ -202,7 +202,7 @@ Document physicalDocument = document.Paginate();
 
 每个区域的行索引从 0 开始。`Body(Action<PageBuilder>)` 也支持不同的行高和合并单元格。
 已有网格可直接使用 `p.Paginate(headerRowCount: 3, footerRowCount: 1)`，声明页头、页尾行数。
-PDF、Windows 打印和 Excel 导出时自动分页；Excel 每个物理页生成一个工作表。
+PDF、Windows 打印和 Excel 导出时自动分页；Excel 默认每个物理页生成一个工作表。
 原始文档不变。`PageValue` 在整个文档分页结束后求值；`BodyRowOffset` 和 `BodyRowCount` 表示当前页明细网格的行范围，一条记录对应一行时可直接用来计算每页小计。
 
 Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settings)` 启用分页。
@@ -212,6 +212,42 @@ Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settin
 分页按定义的实际行高计算，先预留页头、页尾高度，再填入完整明细行。跨行合并的行组整体换页。
 行组超过整页可用高度、合并单元格跨越区域边界、列宽超过可打印宽度时明确报错。
 自定义纸张须提供正的宽高。暂不根据文本折行自动测量行高；页尾紧随明细，末页不拉伸行高。
+
+## 0.4.1 的报表输出与公式
+
+`ExcelReportLayout.SingleSheet` 为每个逻辑 Report 生成连续工作表，支持打印标题和可选冻结页头。默认 `PerPhysicalPage` 按物理页生成工作表。
+
+`SumBodyColumn(column, value)` 使用从 0 开始的列索引，自动生成输出工作表的实际明细范围，应放在报表页头或页尾。空明细生成 `=0`，缓存值和打印值均为 0。分页小计使用 `PageValue` 提供对应页的缓存值。原有 `Formula(...)` 不变，手写公式仍需自行处理空明细和倒序范围。
+
+`PageContext.IsContinuous` 在 SingleSheet 中为 true，在分页输出中为 false，即使 PDF 只有一页也能区分。返回空字符串即可隐藏“本页”文字，页尾行本身仍保留。
+
+```csharp
+var items = Enumerable.Range(1, 50).ToArray();
+var document = Document.Create(d => d.Page(p => p
+    .Settings(s => s.PaperKind(PaperKind.A4).Margins(24))
+    .Columns(100, 120)
+    .Report(r => r
+        .Header(h => h.Row(24, row => { row.Cell("No"); row.Cell("Amount"); }))
+        .Body(items, 20, (row, item) => { row.Cell(item); row.Cell(item * 1000); })
+        .Footer(f => f.Row(24, row =>
+        {
+            row.Cell(new PageValue(page => page.IsContinuous ? "" : $"Page: {page.BodyRowCount}"));
+            row.Cell(c => c.SumBodyColumn(1, value: new PageValue(page =>
+                items.Skip(page.BodyRowOffset).Take(page.BodyRowCount).Sum(x => x * 1000)))
+                .Format("#,##0"));
+        })))));
+
+var excel = document.ToExcelBytes(new ExcelRenderOptions
+{
+    ReportLayout = ExcelReportLayout.SingleSheet,
+    FreezeHeaderRows = true
+});
+var pdf = document.ToPdfBytes();
+```
+
+公式缓存由 Excel、PDF、Canvas 共用；无缓存的未支持公式按 `FormulaWithoutValue` 处理。使用 `Document.Culture` 统一数值和日期格式。预览 v2 跨页共享字形数据，支持多语言控件、PDF 下载文件名及显式释放服务端会话。详见[集成指南](doc/canvas-preview.zh-CN.md)。
+
+PDF 依赖拉丁字体包 `PrintSharp.Fonts.NotoSans`。中日韩追加 `PrintSharp.Fonts.NotoSansCjk`，中日韩衬线字体追加 `PrintSharp.Fonts.NotoSerifCjk`，阿拉伯语追加 `PrintSharp.Fonts.NotoSansArabic`；`PrintSharp.Fonts.Noto` 可安装全部四种字体。
 
 ## NuGet 包
 
@@ -223,6 +259,10 @@ PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布�
 | `PrintSharp.Excel` | `.xlsx` 渲染器和模板解析器 | ClosedXML |
 | `PrintSharp.Pdf` | PDF 渲染器 | SkiaSharp |
 | `PrintSharp.Windows` | Windows 打印渲染器 | `PrintDocument` / GDI+ |
+| `PrintSharp.Preview.AspNetCore` | 预览 HTTP 接口与会话 | ASP.NET Core |
+| `PrintSharp.Preview.Blazor` | Blazor 预览组件 | Blazor |
+| `PrintSharp.Fonts.NotoSans` / `NotoSansCjk` / `NotoSerifCjk` / `NotoSansArabic` | 可选字体包（完整包名共用 `PrintSharp.Fonts.` 前缀） | Noto fonts |
+| `PrintSharp.Fonts.Noto` | 全部四种字体包 | Font packages |
 
 ## 设计原则
 
@@ -253,14 +293,13 @@ dotnet test PrintSharp.slnx
 dotnet run --project demos/PrintSharp.WinForms.Demo
 ```
 
-## NuGet 发布
+## NuGet 与 npm 发布
 
-推送新的 `vMAJOR.MINOR.PATCH` Git 标签后，GitHub Actions 会构建并测试解决方案、验证四个 NuGet 包，然后通过 Trusted Publishing 发布到 NuGet.org。本机不需要 API Key。
+推送未使用的 `vMAJOR.MINOR.PATCH` 标签，会以同一版本发布 11 个 NuGet 包和 `@printsharp/preview`。NuGet 工作流构建并测试解决方案、验证包内容与消费项目，然后发布到 NuGet.org 和 GitHub Packages；npm 工作流构建预览包并携带 provenance 发布。
 
 ```bash
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.4.1
+git push origin v0.4.1
 ```
 
-请使用尚未发布的版本号和标签。
-首次发布前，还需在 GitHub Actions variables 中设置 `NUGET_USER`，并在 NuGet.org Trusted Publishing 中授权仓库 `ogisyouryuu/PrintSharp` 的 `nuget.yml` 工作流发布 `PrintSharp*` 包。
+两端均使用 Trusted Publishing。配置 `NUGET_USER` 和 NuGet.org 针对 `ogisyouryuu/PrintSharp`、`nuget.yml` 的策略，并在 npm 配置 `npm.yml` trusted publisher。本机不需要 API Key，不要复用已发布的版本号。

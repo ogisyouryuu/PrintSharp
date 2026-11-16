@@ -99,6 +99,43 @@ var bytes = document.ToExcelBytes(new ExcelRenderOptions
 
 页码使用 `PageValue.PageNumbers`（或 PageNumber/PageCount），SingleSheet 将其移入 Excel 页脚 `&P / &N`；PDF/预览仍显示实际页码。任意委托不能可靠推断是不是页码，已有 `new PageValue(c => ...)` 需要加 `{ ExcelFooterText = "&P / &N" }` 或替换成上述内置值。
 
+### 明细合计与空数据（0.4.1 新增）
+
+在 Report 的 Header 或 Footer 中使用 `SumBodyColumn(column, value)`，列索引从 0 开始。它按当前输出的明细范围生成公式，无需手动维护页头占用的行数：SingleSheet 合计全部明细，PerPhysicalPage 合计当前工作表的明细。
+
+```csharp
+row.Cell(c => c.SumBodyColumn(1, value: new PageValue(page =>
+    items.Skip(page.BodyRowOffset).Take(page.BodyRowCount).Sum(x => x.Amount)))
+    .Format("#,##0"));
+```
+
+有明细时生成类似 `=SUM(B2:B51)` 的公式；空明细时生成 `=0`，缓存值和 PDF/Canvas 显示值均为 0。`value` 用于打印和 Excel 缓存，可传常量或 PageValue；分页小计应使用 PageValue，保证缓存与该页公式一致。此接口需要 Report 明细区域，应放在明细区域之外，不能放在被合计的明细单元格内。
+
+原有 `Formula(...)` 按原样输出，不自动修正范围。手动拼接行号时，空明细可能产生 `SUM(B2:B1)`，表格软件规范化后会包含合计单元格自身；缓存值不能防止重新计算时的循环引用。无法改用新接口时，请显式处理空数据：
+
+```csharp
+row.Cell(c =>
+{
+    if (items.Count > 0)
+        c.Formula($"=SUM(B2:B{items.Count + 1})", value: total);
+    else
+        c.Value(0);
+    c.Format("#,##0");
+});
+```
+
+### 区分连续输出与分页输出（0.4.1 新增）
+
+`PageContext.IsContinuous` 在 SingleSheet 中为 true，在 PDF、Canvas 和 PerPhysicalPage 中为 false，即使 PDF 恰好只有一页也能区分。可据此留空仅对分页有意义的文字：
+
+```csharp
+row.Cell(new PageValue(page => page.IsContinuous
+    ? ""
+    : $"本页 {page.BodyRowCount} 件"));
+```
+
+这只改变单元格内容，页脚行仍保留。
+
 ## 固定格式语言与下载文件名
 
 格式语言优先级为 `PdfRenderOptions.Culture` > `Document.Create(d => d.Culture("ja-JP")...)` > InvariantCulture；不再跟随 CurrentCulture。`yyyy/MM/dd` 和 `#,##0` 的默认输出固定为斜线和逗号。Culture 在分页后保留，预览会话创建时使用相同规则。Excel 仍保存格式码，由阅读器解释，不提供完整 .NET/Excel 格式转换。

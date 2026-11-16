@@ -1,11 +1,35 @@
 using System.Globalization;
 using PrintSharp.Documents;
+using PrintSharp.Fluent;
 using Xunit;
 
 namespace PrintSharp.Pdf.Tests;
 
 public sealed class FormulaAndCultureTests
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(50)]
+    public void BodySumPrintsResolvedSubtotalInPreviewAndPdf(int count)
+    {
+        var items = Enumerable.Range(1, count).ToArray();
+        var document = Document.Create(d => d.Page(p => p.Settings(s => s.PaperKind(PaperKind.A4)).Columns(200)
+            .Report(r => r.Header(h => h.Rows(20).Cell("A1", "Header"))
+                .Body(items, 20, (row, item) => row.Cell(item))
+                .Footer(f => f.Rows(20).Cell(0, 0, c => c.SumBodyColumn(0,
+                    new PageValue(context => items.Skip(context.BodyRowOffset).Take(context.BodyRowCount).Sum())))))));
+        var preview = SkiaPdfRenderer.Instance.CreatePreview(document);
+        var pages = document.Paginate().Pages;
+        using var pdf = UglyToad.PdfPig.PdfDocument.Open(preview.ToPdfBytes());
+        for (int i = 0; i < pages.Count; i++)
+        {
+            var context = pages[i].Context!;
+            string expected = items.Skip(context.BodyRowOffset).Take(context.BodyRowCount).Sum().ToString(CultureInfo.InvariantCulture);
+            Assert.Equal(expected, preview.Pages[i].TextRegions.Last().Text);
+            Assert.Contains(expected, pdf.GetPage(i + 1).Text);
+        }
+    }
+
     [Fact]
     public void CachedFormulaProducesFormattedPreviewAndPdf()
     {

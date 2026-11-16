@@ -17,7 +17,7 @@
 
 1 つの Excel ライクなグリッドドキュメントから、**Excel**、**PDF**、または **Windows プリンター**へ一貫して出力します。PrintSharp は自由な `X` / `Y` 座標ではなく、行・列・セル結合でレイアウトを保持します。Excel グリッドが常にレイアウトの基準です。
 
-> **ステータス:** 初期段階のライブラリ（`0.3.0`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
+> **ステータス:** 初期段階のライブラリ（`0.4.1`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
 
 HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
@@ -32,7 +32,7 @@ PDF と Canvas は、物理改ページ、折り返し、余白、字形位置�
 - **検索：** 必要時に `/text` 索引を取得し、大文字小文字を区別しないリテラル検索、件数表示、前後の結果への移動、文字矩形のハイライトに対応します。検索語は UTF-16 コード単位で 256、結果は 1,000 件が上限です。
 - **選択とコピー：** ドラッグして Ctrl+C / Command+C またはコピーボタンを使うと、多言語の論理順で原文をコピーできます。マウスの始点と終点は実際の文字矩形から求めます。デモの選択状態欄は高さを固定し、ドラッグ中に用紙が動かないようにしています。
 
-プレビュー用 npm パッケージと Blazor RCL はソースから利用でき、npm / NuGet には未公開です。Vue は `@printsharp/preview/vue`、Blazor は `src/PrintSharp.Preview.Blazor` を参照します。メソッド、双方向バインディング、イベント、配置ファイルは[パッケージ README](packages/preview/README.md)を参照してください。
+プレビューは `npm i @printsharp/preview`、Blazor は `dotnet add package PrintSharp.Preview.Blazor` で導入できます。Vue は `@printsharp/preview/vue`、ASP.NET Core ホストは `PrintSharp.Preview.AspNetCore` を使用します。API と配置方法は[パッケージ README](packages/preview/README.md)を参照してください。
 
 API をポート 5080 で起動し、別のターミナルでデモを実行します。
 
@@ -203,7 +203,7 @@ Document physicalDocument = document.Paginate();
 
 各領域の行インデックスは 0 から始まります。`Body(Action<PageBuilder>)` では異なる行高や結合セルも定義できます。
 既存のグリッドには `p.Paginate(headerRowCount: 3, footerRowCount: 1)` で自動改ページを追加できます。
-PDF、Windows 印刷、Excel 出力時に自動的に改ページし、Excel では物理ページごとにワークシートを作成します。
+PDF、Windows 印刷、Excel 出力時に自動的に改ページし、Excel では既定で物理ページごとにワークシートを作成します。
 元のドキュメントは変更しません。`PageValue` は全ページ確定後に評価されます。
 `BodyRowOffset` と `BodyRowCount` はそのページの明細グリッドの行範囲を示し、1 レコード = 1 行の場合は小計の対象レコード範囲として使用できます。
 
@@ -215,6 +215,42 @@ Excel テンプレートは `ExcelTemplateParser.Instance.RenderReport(path, dat
 縦結合した行は一緒に改ページします。行グループが印刷領域に収まらない場合、結合が領域境界を跨ぐ場合、列幅が印刷領域を超える場合はエラーになります。
 任意の用紙には正の幅と高さが必要です。折り返した文字に応じた行高の自動測定は行いません。フッターは明細の直後に配置し、最終ページの行高は引き伸ばしません。
 
+## 0.4.1 の帳票出力と数式
+
+`ExcelReportLayout.SingleSheet` は論理 Report ごとに連続したシートを作成し、印刷タイトルと任意のヘッダー固定に対応します。既定の `PerPhysicalPage` は物理ページごとにシートを作成します。
+
+`SumBodyColumn(column, value)` は 0 基準の列番号から出力シートの実際の明細範囲を生成します。帳票のヘッダーまたはフッターに配置してください。空の明細は `=0` となり、キャッシュ値と印刷値も 0 です。ページ小計には `PageValue` でキャッシュを指定します。既存の `Formula(...)` は変更せず、手書きの空範囲や逆順範囲は呼び出し側で処理します。
+
+`PageContext.IsContinuous` は SingleSheet で true、改ページ出力では 1 ページの PDF でも false です。空文字を返すとページ専用の文言を非表示にできます。フッター行自体は残ります。
+
+```csharp
+var items = Enumerable.Range(1, 50).ToArray();
+var document = Document.Create(d => d.Page(p => p
+    .Settings(s => s.PaperKind(PaperKind.A4).Margins(24))
+    .Columns(100, 120)
+    .Report(r => r
+        .Header(h => h.Row(24, row => { row.Cell("No"); row.Cell("Amount"); }))
+        .Body(items, 20, (row, item) => { row.Cell(item); row.Cell(item * 1000); })
+        .Footer(f => f.Row(24, row =>
+        {
+            row.Cell(new PageValue(page => page.IsContinuous ? "" : $"Page: {page.BodyRowCount}"));
+            row.Cell(c => c.SumBodyColumn(1, value: new PageValue(page =>
+                items.Skip(page.BodyRowOffset).Take(page.BodyRowCount).Sum(x => x * 1000)))
+                .Format("#,##0"));
+        })))));
+
+var excel = document.ToExcelBytes(new ExcelRenderOptions
+{
+    ReportLayout = ExcelReportLayout.SingleSheet,
+    FreezeHeaderRows = true
+});
+var pdf = document.ToPdfBytes();
+```
+
+数式キャッシュは Excel・PDF・Canvas で共有します。キャッシュのない未対応数式は `FormulaWithoutValue` に従います。数値・日付書式には `Document.Culture` を指定します。プレビュー v2 はページ間で字形データを共有し、多言語 UI、PDF ファイル名、サーバーセッションの明示的な解放に対応します。[統合ガイド](doc/canvas-preview.zh-CN.md)を参照してください。
+
+PDF は欧文用の `PrintSharp.Fonts.NotoSans` に依存します。日中韓には `PrintSharp.Fonts.NotoSansCjk`、明朝体には `PrintSharp.Fonts.NotoSerifCjk`、アラビア語には `PrintSharp.Fonts.NotoSansArabic` を追加します。`PrintSharp.Fonts.Noto` は全 4 種を導入します。
+
 ## パッケージ
 
 PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します。公開時は `Fonts/`、`Licenses/`、ネイティブライブラリも配置してください。`SaveAsPdf()` と `ToPdfBytes()` の呼び出し方は維持し、`ToPdfDocument()` は読み取り専用の `RenderedPdfDocument` を返します。
@@ -225,6 +261,10 @@ PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します
 | `PrintSharp.Excel` | `.xlsx` レンダラーとテンプレートパーサー | ClosedXML |
 | `PrintSharp.Pdf` | PDF レンダラー | SkiaSharp |
 | `PrintSharp.Windows` | Windows 印刷レンダラー | `PrintDocument` / GDI+ |
+| `PrintSharp.Preview.AspNetCore` | プレビュー HTTP API とセッション | ASP.NET Core |
+| `PrintSharp.Preview.Blazor` | Blazor プレビューコンポーネント | Blazor |
+| `PrintSharp.Fonts.NotoSans` / `NotoSansCjk` / `NotoSerifCjk` / `NotoSansArabic` | 選択式フォント（共通接頭辞は `PrintSharp.Fonts.`） | Noto fonts |
+| `PrintSharp.Fonts.Noto` | 全 4 種のフォントパッケージ | Font packages |
 
 ## 設計原則
 
@@ -255,14 +295,13 @@ dotnet test PrintSharp.slnx
 dotnet run --project demos/PrintSharp.WinForms.Demo
 ```
 
-## NuGet パッケージの公開
+## NuGet と npm の公開
 
-新しい `vMAJOR.MINOR.PATCH` タグを push すると、GitHub Actions がソリューションをビルド／テストし、4 つの NuGet パッケージを検証して NuGet.org に公開します。ローカルの API Key は不要です。
+未使用の `vMAJOR.MINOR.PATCH` タグを push すると、11 個の NuGet パッケージと `@printsharp/preview` を同じバージョンで公開します。NuGet ワークフローはビルド・テスト、パッケージ内容と利用側プロジェクトの検証後、NuGet.org と GitHub Packages に公開します。npm ワークフローはビルドし、provenance 付きで公開します。
 
 ```bash
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.4.1
+git push origin v0.4.1
 ```
 
-使用済みのタグやバージョンは再利用しないでください。
-初回公開前に、GitHub Actions の variable `NUGET_USER` を設定し、NuGet.org の Trusted Publishing で `ogisyouryuu/PrintSharp` リポジトリの `nuget.yml` ワークフローに `PrintSharp*` パッケージの公開を許可してください。
+両レジストリとも Trusted Publishing を使用します。`NUGET_USER` と NuGet 側の `ogisyouryuu/PrintSharp` / `nuget.yml` ポリシー、npm 側の `npm.yml` trusted publisher を設定してください。ローカル API Key は不要です。公開済みバージョンは再利用しないでください。

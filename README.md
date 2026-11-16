@@ -17,7 +17,7 @@
 
 Create one Excel-like grid document, then render it consistently to **Excel**, **PDF**, or a **Windows printer**. PrintSharp keeps layout in rows, columns, and cell spans—not free-form `X`/`Y` coordinates—so the Excel grid remains the source of truth.
 
-> **Status:** early-stage library (`0.3.0`). The public API and renderer behavior may evolve before a stable release.
+> **Status:** early-stage library (`0.4.1`). The public API and renderer behavior may evolve before a stable release.
 
 HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
 
@@ -32,7 +32,7 @@ PDF and Canvas share an immutable rendering plan, including pagination, wrapping
 - **Search:** a lazy `/text` index supports case-insensitive literal search, counts, previous/next navigation, and positioned text highlights. Queries are limited to 256 UTF-16 code units and 1,000 results.
 - **Selection and copying:** drag over text and use Ctrl+C / Command+C or Copy. Multilingual text retains its logical order. Mouse boundaries use actual text boxes, and demo selection summaries reserve their height so the page does not move during dragging.
 
-The preview npm package and Blazor RCL are available from source and are not yet published to npm / NuGet. Vue uses `@printsharp/preview/vue`; Blazor references `src/PrintSharp.Preview.Blazor`. Methods, bindings, events, and deployment files are documented in the [package README](packages/preview/README.md).
+Install with `npm i @printsharp/preview` and `dotnet add package PrintSharp.Preview.Blazor`. Vue uses `@printsharp/preview/vue`; ASP.NET Core hosts use `PrintSharp.Preview.AspNetCore`. See the [package README](packages/preview/README.md) for APIs and deployment.
 
 Start the API on port 5080, then run either demo in a separate terminal:
 
@@ -202,7 +202,7 @@ Document physicalDocument = document.Paginate();
 
 Each section uses local row indices starting at zero. `Body(Action<PageBuilder>)` also supports variable row heights and merged cells.
 For an existing grid, call `p.Paginate(headerRowCount: 3, footerRowCount: 1)` instead.
-PDF, Windows printing, and Excel export paginate automatically; Excel uses one worksheet per physical page.
+PDF, Windows printing, and Excel export paginate automatically; Excel defaults to one worksheet per physical page.
 The source document remains unchanged. `PageValue` resolves after all pages are known; `BodyRowOffset` and `BodyRowCount` identify the current page's body grid rows for subtotals. With one row per record, these also identify the record range.
 
 Excel templates can opt in with `ExcelTemplateParser.Instance.RenderReport(path, data, settings)`.
@@ -214,6 +214,42 @@ Merged row groups stay together. A group larger than the available height, a mer
 Custom paper requires positive width and height. Text wrapping does not automatically measure or increase row height; footers follow the body without stretching the final page.
 
 
+## Report output and formulas in 0.4.1
+
+`ExcelReportLayout.SingleSheet` exports each logical Report as one continuous worksheet, with print titles and optional frozen headers. The default `PerPhysicalPage` creates a worksheet per physical page.
+
+`SumBodyColumn(column, value)` uses a zero-based column index and generates the actual body range for each output worksheet. Place it in a report header or footer. Empty bodies produce `=0` with cached and printable value 0. For page subtotals, supply a `PageValue` cache. Raw `Formula(...)` remains unchanged: callers must handle empty or reversed ranges themselves.
+
+`PageContext.IsContinuous` is true for SingleSheet and false for paginated output, even a one-page PDF. Return an empty string to hide page-only text; the footer row remains.
+
+```csharp
+var items = Enumerable.Range(1, 50).ToArray();
+var document = Document.Create(d => d.Page(p => p
+    .Settings(s => s.PaperKind(PaperKind.A4).Margins(24))
+    .Columns(100, 120)
+    .Report(r => r
+        .Header(h => h.Row(24, row => { row.Cell("No"); row.Cell("Amount"); }))
+        .Body(items, 20, (row, item) => { row.Cell(item); row.Cell(item * 1000); })
+        .Footer(f => f.Row(24, row =>
+        {
+            row.Cell(new PageValue(page => page.IsContinuous ? "" : $"Page: {page.BodyRowCount}"));
+            row.Cell(c => c.SumBodyColumn(1, value: new PageValue(page =>
+                items.Skip(page.BodyRowOffset).Take(page.BodyRowCount).Sum(x => x * 1000)))
+                .Format("#,##0"));
+        })))));
+
+var excel = document.ToExcelBytes(new ExcelRenderOptions
+{
+    ReportLayout = ExcelReportLayout.SingleSheet,
+    FreezeHeaderRows = true
+});
+var pdf = document.ToPdfBytes();
+```
+
+Formula caches are shared by Excel, PDF, and Canvas; uncached unsupported formulas follow `FormulaWithoutValue`. Set `Document.Culture` for consistent number/date formatting. Preview v2 shares glyph data across pages and supports localized controls, PDF filenames, and explicit server-session cleanup. See the [integration guide](doc/canvas-preview.zh-CN.md).
+
+PDF depends on Latin fonts in `PrintSharp.Fonts.NotoSans`. Add `PrintSharp.Fonts.NotoSansCjk` for Chinese/Japanese/Korean, `PrintSharp.Fonts.NotoSerifCjk` for CJK serif, or `PrintSharp.Fonts.NotoSansArabic` for Arabic. `PrintSharp.Fonts.Noto` installs all four families.
+
 ## Packages
 
 PDF output uses SkiaSharp with bundled Noto fonts and HarfBuzz shaping. Keep the `Fonts/`, `Licenses/` and native runtime assets when publishing. `SaveAsPdf()` and `ToPdfBytes()` retain their call signatures; `ToPdfDocument()` returns a read-only `RenderedPdfDocument`.
@@ -224,6 +260,10 @@ PDF output uses SkiaSharp with bundled Noto fonts and HarfBuzz shaping. Keep the
 | `PrintSharp.Excel` | `.xlsx` renderer and template parser | ClosedXML |
 | `PrintSharp.Pdf` | PDF renderer | SkiaSharp |
 | `PrintSharp.Windows` | Windows printing renderer | `PrintDocument` / GDI+ |
+| `PrintSharp.Preview.AspNetCore` | Preview HTTP endpoints and sessions | ASP.NET Core |
+| `PrintSharp.Preview.Blazor` | Blazor preview component | Blazor |
+| `PrintSharp.Fonts.NotoSans` / `NotoSansCjk` / `NotoSerifCjk` / `NotoSansArabic` | Optional font families (full package names share `PrintSharp.Fonts.`) | Noto fonts |
+| `PrintSharp.Fonts.Noto` | All four font packages | Font packages |
 
 ## Design principles
 
@@ -254,15 +294,13 @@ The [WinForms demo](https://github.com/ogisyouryuu/PrintSharp/tree/main/demos/Pr
 dotnet run --project demos/PrintSharp.WinForms.Demo
 ```
 
-## NuGet publishing
+## NuGet and npm publishing
 
-Create and push a new version tag such as `v0.1.2` to run the release workflow:
+Push an unused `vMAJOR.MINOR.PATCH` tag to publish all 11 NuGet packages and `@printsharp/preview` at the same version. The NuGet workflow builds/tests the solution, validates package contents and a consumer, then publishes to NuGet.org and GitHub Packages. The npm workflow builds and publishes with provenance.
 
 ```bash
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.4.1
+git push origin v0.4.1
 ```
 
-Use an unused `vMAJOR.MINOR.PATCH` version. The workflow builds and tests the solution, packs the four library packages, validates their contents, builds a local package consumer, and publishes to NuGet.org through Trusted Publishing; no local API key is needed.
-
-Configure a GitHub Actions repository variable named `NUGET_USER` with the NuGet.org profile name. On NuGet.org, add a Trusted Publishing policy for repository owner `ogisyouryuu`, repository `PrintSharp`, and workflow file `nuget.yml`. Grant the policy permission to publish new package versions for the four `PrintSharp*` packages.
+Both registries use Trusted Publishing. Configure `NUGET_USER` and the NuGet policy for `ogisyouryuu/PrintSharp`, workflow `nuget.yml`; configure the npm trusted publisher for `npm.yml`. No local API key is required. Never reuse a published version.
