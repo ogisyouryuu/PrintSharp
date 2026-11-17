@@ -131,6 +131,32 @@ document.SaveAsExcel("sales-report.xlsx");
 document.SaveAsPdf("sales-report.pdf");
 ```
 
+`PrintSharp.Html` を参照すると、ブラウザーで表示・印刷できる単独の HTML 文書を出力できます。
+
+```csharp
+using PrintSharp.Html;
+
+string html = document.ToHtml();
+document.SaveAsHtml("sales-report.html");
+```
+
+`PrintSharp.Image` を参照すると、物理ページごとに画像を出力できます。ファイル名には `sales-report-1.webp` のようにページ番号が付きます。WebP は可逆圧縮で、既定の解像度は 144 DPI です。
+
+```csharp
+using PrintSharp.Image;
+
+document.SavePageImages("sales-report.png");
+document.SavePageImages("sales-report.webp", dpi: 300);
+```
+
+`PrintSharp.Word` を参照すると、編集可能な Word の表を出力できます。文字の配置は Word が行い、編集後に改ページ位置が変わる場合があります。
+
+```csharp
+using PrintSharp.Word;
+
+document.SaveAsDocx("sales-report.docx");
+```
+
 Windows で印刷する場合は、`PrintSharp.Windows` を参照して次を呼び出します。
 
 ```csharp
@@ -261,6 +287,9 @@ PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します
 | `PrintSharp.Excel` | `.xlsx` レンダラーとテンプレートパーサー | ClosedXML |
 | `PrintSharp.Pdf` | PDF レンダラー | SkiaSharp |
 | `PrintSharp.Windows` | Windows 印刷レンダラー | `PrintDocument` / GDI+ |
+| `PrintSharp.Html` | 単独の HTML 出力 | HTML / CSS |
+| `PrintSharp.Image` | PNG と可逆 WebP のページ出力 | SkiaSharp |
+| `PrintSharp.Word` | 編集可能な DOCX 出力 | Open XML SDK |
 | `PrintSharp.Preview.AspNetCore` | プレビュー HTTP API とセッション | ASP.NET Core |
 | `PrintSharp.Preview.Blazor` | Blazor プレビューコンポーネント | Blazor |
 | `PrintSharp.Fonts.NotoSans` / `NotoSansCjk` / `NotoSerifCjk` / `NotoSansArabic` | 選択式フォント（共通接頭辞は `PrintSharp.Fonts.`） | Noto fonts |

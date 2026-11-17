@@ -131,6 +131,32 @@ document.SaveAsExcel("sales-report.xlsx");
 document.SaveAsPdf("sales-report.pdf");
 ```
 
+Reference `PrintSharp.Html` to export a standalone page for browser viewing and printing.
+
+```csharp
+using PrintSharp.Html;
+
+string html = document.ToHtml();
+document.SaveAsHtml("sales-report.html");
+```
+
+Reference `PrintSharp.Image` to export one image per physical page. Filenames include the page number, such as `sales-report-1.webp`. WebP uses lossless compression, and the default resolution is 144 DPI.
+
+```csharp
+using PrintSharp.Image;
+
+document.SavePageImages("sales-report.png");
+document.SavePageImages("sales-report.webp", dpi: 300);
+```
+
+Reference `PrintSharp.Word` to export editable Word tables. Word controls font layout and can repaginate the document after editing.
+
+```csharp
+using PrintSharp.Word;
+
+document.SaveAsDocx("sales-report.docx");
+```
+
 For Windows printing, reference `PrintSharp.Windows` and call:
 
 ```csharp
@@ -260,6 +286,9 @@ PDF output uses SkiaSharp with bundled Noto fonts and HarfBuzz shaping. Keep the
 | `PrintSharp.Excel` | `.xlsx` renderer and template parser | ClosedXML |
 | `PrintSharp.Pdf` | PDF renderer | SkiaSharp |
 | `PrintSharp.Windows` | Windows printing renderer | `PrintDocument` / GDI+ |
+| `PrintSharp.Html` | Standalone HTML export | HTML / CSS |
+| `PrintSharp.Image` | PNG and lossless WebP page export | SkiaSharp |
+| `PrintSharp.Word` | Editable DOCX export | Open XML SDK |
 | `PrintSharp.Preview.AspNetCore` | Preview HTTP endpoints and sessions | ASP.NET Core |
 | `PrintSharp.Preview.Blazor` | Blazor preview component | Blazor |
 | `PrintSharp.Fonts.NotoSans` / `NotoSansCjk` / `NotoSerifCjk` / `NotoSansArabic` | Optional font families (full package names share `PrintSharp.Fonts.`) | Noto fonts |

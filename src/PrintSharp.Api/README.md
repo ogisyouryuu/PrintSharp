@@ -38,7 +38,7 @@ dotnet run --project demos/PrintSharp.Multilingual.Demo -- output/pdf/local
 dotnet run --project demos/PrintSharp.Multilingual.Demo -- output/pdf/http http://127.0.0.1:5080/
 ```
 
-输出包含 `multilingual.pdf`、可复用的 `template.xlsx`、`data.json` 及环境记录。其他项目引用 `PrintSharp.Pdf` 后可以直接调用 `document.SaveAsPdf(...)` / `document.ToPdfBytes()`，默认启用同一套 Noto 多语言排版。通过 `PdfRenderOptions.TextRenderer` 可替换文字绘制；接口直接接收 Skia 的画布，不再包含 PDFsharp 类型。类库接口迁移说明见 `doc/pdf-backend-migration.md`。
+输出包含 `multilingual.pdf`、`multilingual.html`、`multilingual.docx`、每页 PNG 和无损 WebP、可复用的 `template.xlsx`、`data.json` 及环境记录。HTML、DOCX 和图片由示例在本地生成，使用相同模板和数据，按横向 A4 分页。其他项目引用 `PrintSharp.Pdf` 后可以直接调用 `document.SaveAsPdf(...)` / `document.ToPdfBytes()`，默认启用同一套 Noto 多语言排版。通过 `PdfRenderOptions.TextRenderer` 可替换文字绘制；接口直接接收 Skia 的画布，不再包含 PDFsharp 类型。类库接口迁移说明见 `doc/pdf-backend-migration.md`。
 
 ### Rocky Linux 9.6 / 10 部署
 

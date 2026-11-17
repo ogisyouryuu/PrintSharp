@@ -131,6 +131,32 @@ document.SaveAsExcel("sales-report.xlsx");
 document.SaveAsPdf("sales-report.pdf");
 ```
 
+引用 `PrintSharp.Html` 后，可以将文档导出为独立 HTML，在浏览器中查看和打印。
+
+```csharp
+using PrintSharp.Html;
+
+string html = document.ToHtml();
+document.SaveAsHtml("sales-report.html");
+```
+
+引用 `PrintSharp.Image` 可以把每个物理页导出为一张图。文件名自动加页码，例如 `sales-report-1.webp`。WebP 使用无损压缩，默认分辨率为 144 DPI。
+
+```csharp
+using PrintSharp.Image;
+
+document.SavePageImages("sales-report.png");
+document.SavePageImages("sales-report.webp", dpi: 300);
+```
+
+引用 `PrintSharp.Word` 可以把报表导出为可编辑的 Word 表格。字体与换行由 Word 处理，编辑后可能重新分页。
+
+```csharp
+using PrintSharp.Word;
+
+document.SaveAsDocx("sales-report.docx");
+```
+
 若需要 Windows 打印，请引用 `PrintSharp.Windows` 并调用：
 
 ```csharp
@@ -259,6 +285,9 @@ PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布�
 | `PrintSharp.Excel` | `.xlsx` 渲染器和模板解析器 | ClosedXML |
 | `PrintSharp.Pdf` | PDF 渲染器 | SkiaSharp |
 | `PrintSharp.Windows` | Windows 打印渲染器 | `PrintDocument` / GDI+ |
+| `PrintSharp.Html` | 独立 HTML 导出 | HTML / CSS |
+| `PrintSharp.Image` | 按页导出 PNG、无损 WebP | SkiaSharp |
+| `PrintSharp.Word` | 可编辑的 DOCX 导出 | Open XML SDK |
 | `PrintSharp.Preview.AspNetCore` | 预览 HTTP 接口与会话 | ASP.NET Core |
 | `PrintSharp.Preview.Blazor` | Blazor 预览组件 | Blazor |
 | `PrintSharp.Fonts.NotoSans` / `NotoSansCjk` / `NotoSerifCjk` / `NotoSansArabic` | 可选字体包（完整包名共用 `PrintSharp.Fonts.` 前缀） | Noto fonts |

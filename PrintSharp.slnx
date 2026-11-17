@@ -12,6 +12,9 @@
     <Project Path="src/PrintSharp.Fonts.Noto/PrintSharp.Fonts.Noto.csproj" />
     <Project Path="src/PrintSharp.Preview.AspNetCore/PrintSharp.Preview.AspNetCore.csproj" />
     <Project Path="src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
+    <Project Path="src/PrintSharp.Html/PrintSharp.Html.csproj" />
+    <Project Path="src/PrintSharp.Image/PrintSharp.Image.csproj" />
+    <Project Path="src/PrintSharp.Word/PrintSharp.Word.csproj" />
     <Project Path="src/PrintSharp/PrintSharp.csproj" />
     <Project Path="src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
     <Project Path="src/PrintSharp.Api/PrintSharp.Api.csproj" />
@@ -25,6 +28,8 @@
     <Project Path="tests/PrintSharp.Api.Tests/PrintSharp.Api.Tests.csproj" />
     <Project Path="tests/PrintSharp.Excel.AotSmoke/PrintSharp.Excel.AotSmoke.csproj" />
     <Project Path="tests/PrintSharp.Pdf.Tests/PrintSharp.Pdf.Tests.csproj" />
+    <Project Path="tests/PrintSharp.Html.Tests/PrintSharp.Html.Tests.csproj" />
+    <Project Path="tests/PrintSharp.Export.Tests/PrintSharp.Export.Tests.csproj" />
     <Project Path="tests/PrintSharp.Windows.Tests/PrintSharp.Windows.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">

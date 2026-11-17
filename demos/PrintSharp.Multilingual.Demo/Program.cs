@@ -1,3 +1,4 @@
+using System.Data;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -6,6 +7,11 @@ using ClosedXML.Excel;
 using Microsoft.Extensions.Options;
 using PrintSharp.Api;
 using PrintSharp.Demos;
+using PrintSharp.Documents;
+using PrintSharp.Excel;
+using PrintSharp.Html;
+using PrintSharp.Image;
+using PrintSharp.Word;
 
 string output = Path.GetFullPath(args.Length > 0 ? args[0] : "output/pdf/multilingual");
 Directory.CreateDirectory(output);
@@ -39,8 +45,21 @@ var data = new PrintDataSet([
     new("Details", [new("Id", "int"), new("Memo", "string")],
         memos.Select((memo, index) => JsonSerializer.SerializeToElement(new { Id = index + 1, Memo = memo })).ToList())
 ]);
-await File.WriteAllBytesAsync(Path.Combine(output, "template.xlsx"), templateBytes);
+string templatePath = Path.Combine(output, "template.xlsx");
+await File.WriteAllBytesAsync(templatePath, templateBytes);
 await File.WriteAllTextAsync(Path.Combine(output, "data.json"), JsonSerializer.Serialize(data, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }));
+
+// 同じテンプレートとデータを使用して、ローカル出力を生成します。
+using var bindingData = new PrintDataSetAdapter(new PrintApiOptions()).Convert(data);
+var document = ExcelTemplateParser.Instance.RenderReport(templatePath, bindingData, new PageSettings
+{
+    PaperKind = PaperKind.A4,
+    Orientation = PageOrientation.Landscape
+}, collectionName: "Details");
+document.SaveAsHtml(Path.Combine(output, "multilingual.html"));
+document.SavePageImages(Path.Combine(output, "multilingual.png"));
+document.SavePageImages(Path.Combine(output, "multilingual.webp"));
+document.SaveAsDocx(Path.Combine(output, "multilingual.docx"));
 
 byte[] pdf;
 if (args.Length > 1)

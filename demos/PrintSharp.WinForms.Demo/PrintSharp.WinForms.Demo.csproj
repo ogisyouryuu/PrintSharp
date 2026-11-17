@@ -9,6 +9,9 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.1" />
     <ProjectReference Include="../../src/PrintSharp.Excel/PrintSharp.Excel.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Html/PrintSharp.Html.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Image/PrintSharp.Image.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Word/PrintSharp.Word.csproj" />
     <ProjectReference Include="../../src/PrintSharp.Pdf/PrintSharp.Pdf.csproj" />
     <ProjectReference Include="../../src/PrintSharp.Windows/PrintSharp.Windows.csproj" />
     <Content Include="Templates/*.xlsx" CopyToOutputDirectory="PreserveNewest" />

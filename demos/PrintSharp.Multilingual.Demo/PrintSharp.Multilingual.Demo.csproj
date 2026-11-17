@@ -7,6 +7,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/PrintSharp.Api/PrintSharp.Api.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Html/PrintSharp.Html.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Image/PrintSharp.Image.csproj" />
+    <ProjectReference Include="../../src/PrintSharp.Word/PrintSharp.Word.csproj" />
     <Compile Include="../Shared/MultilingualSamples.cs" Link="MultilingualSamples.cs" />
   </ItemGroup>
 </Project>

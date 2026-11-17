@@ -68,6 +68,9 @@ jobs:
             'src/PrintSharp/PrintSharp.csproj',
             'src/PrintSharp.Excel/PrintSharp.Excel.csproj',
             'src/PrintSharp.Pdf/PrintSharp.Pdf.csproj',
+            'src/PrintSharp.Html/PrintSharp.Html.csproj',
+            'src/PrintSharp.Image/PrintSharp.Image.csproj',
+            'src/PrintSharp.Word/PrintSharp.Word.csproj',
             'src/PrintSharp.Windows/PrintSharp.Windows.csproj',
             'src/PrintSharp.Preview.AspNetCore/PrintSharp.Preview.AspNetCore.csproj',
             'src/PrintSharp.Preview.Blazor/PrintSharp.Preview.Blazor.csproj'

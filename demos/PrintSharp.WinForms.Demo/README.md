@@ -1,6 +1,6 @@
 # PrintSharp WinForms Demo
 
-基于 .NET 11 Windows Forms，引用仓库内的 PrintSharp.Excel、PrintSharp.Pdf 和 PrintSharp.Windows。
+基于 .NET 11 Windows Forms，引用仓库内的 PrintSharp.Excel、PrintSharp.Pdf、PrintSharp.Html 和 PrintSharp.Windows。
 
 ## 运行
 
@@ -16,7 +16,9 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 
 左侧 DataGridView 默认绑定 100 行虚构宿泊数据，可以修改姓名、客室、日期、泊数、单价，金额自动按泊数 × 单价计算。导出和预览读取当前表格的完整数据，包含尚未离开编辑框的有效输入。
 
-选择示例后使用“导出 Excel”“导出 PDF”或“打印（生成预览）”。右侧是 Windows 原生 PrintPreviewControl，预览页码可以切换。打印按钮只生成预览，不发送实际打印任务。修改数据或切换示例后旧预览清除，重新点击按钮即可生成。
+选择示例后使用“导出 Excel”“导出 PDF”“导出 HTML”或“打印（生成预览）”。保存的 HTML 可以直接在浏览器中查看和打印。右侧是 Windows 原生 PrintPreviewControl，预览页码可以切换。打印按钮只生成预览，不发送实际打印任务。修改数据或切换示例后旧预览清除，重新点击按钮即可生成。
+
+“导出 PNG”和“导出 WebP”将每页保存为一张带页码的图片，WebP 使用无损压缩。“导出 Word”保存包含可编辑表格的 `.docx` 文件。
 
 工具栏的“API 地址”默认为 `https://printsharp.ginbow.eu.org`，可改成其他 PrintSharp.Api 地址。点击“微服务生成 PDF”或“微服务生成 Excel”会将当前表格数据和内存中生成的 XLSX 模板通过 HTTPS multipart 上传到 `/api/v1/print/{format}/upload`，并将服务返回的文件保存到所选位置。该 API 当前没有身份认证；请只把演示数据发送到你信任的服务地址。
 
@@ -30,7 +32,7 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 | 自动分页报表（不同明细行高） | 独立 `AutomaticPaginationReport`；24/36 点明细行高，由库自动换页 | 5 |
 | 混合语言备注（中日韩阿拉伯文） | 独立 `MultilingualReport`；每条备注 78 点，使用随包携带的 Noto 字体 | 13 |
 
-每个物理页对应一个 Excel 工作表、一页 PDF 和一页打印预览。酒店单据演示一张多页单据，包含抬头、编号、宿泊期间、全单金额、明细、每页小计、含税金额、内消费税和支付信息。总金额在各页重复显示，不能将这些总金额再次相加。所有酒店、客户、登记号码和银行信息均为虚构样例。
+每个物理页对应一个 Excel 工作表、一页 PDF、一页 HTML 和一页打印预览。酒店单据演示一张多页单据，包含抬头、编号、宿泊期间、全单金额、明细、每页小计、含税金额、内消费税和支付信息。总金额在各页重复显示，不能将这些总金额再次相加。所有酒店、客户、登记号码和银行信息均为虚构样例。
 
 ## 自动分页示例
 
@@ -83,3 +85,4 @@ dotnet test PrintSharp.slnx
 ```
 
 冒烟验证实例化主窗体，并对七种示例检查 100 行编号连续且无遗漏、模板占位符全部替换、扣除余白后的 A4 布局边界、非末页剩余高度不足以放下下一条明细的实际行高、Excel 工作表数与 PDF 页数一致。自动分页示例还验证不同明细行高、每页条数、页码和每页小计；混合语言示例验证全部 Memo 分页后的内容与顺序保持一致。在可用打印机驱动存在时，还通过 PreviewPrintController 实际生成所有预览页并核对页数，不发送打印任务。输出目录包含 Excel、PDF、首页预览 PNG 和完成标记；无打印机驱动时跳过预览验证。
+每种示例也会生成 HTML、PNG、无损 WebP 和 DOCX。冒烟测试会核对 HTML 页数、两种图片的文件数，以及 DOCX 的表格数和 Open XML 结构。

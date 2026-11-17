@@ -1,7 +1,13 @@
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Validation;
 using PrintSharp.Excel;
+using PrintSharp.Html;
+using PrintSharp.Image;
 using PrintSharp.Pdf;
 using PrintSharp.Windows;
+using PrintSharp.Word;
+using WordTable = DocumentFormat.OpenXml.Wordprocessing.Table;
 using System.Drawing.Printing;
 
 namespace PrintSharp.WinForms.Demo;
@@ -76,6 +82,27 @@ internal static class SmokeTest
             using var pdf = logical.ToPdfDocument();
             if (pdf.PageCount != expected) throw new InvalidOperationException("PDF ページ数が一致しません。");
             pdf.Save(Path.Combine(directory, $"{kind}.pdf"));
+            string htmlPath = Path.Combine(directory, $"{kind}.html");
+            logical.SaveAsHtml(htmlPath);
+            string html = File.ReadAllText(htmlPath);
+            if (html.Split("<section class=\"page\"", StringSplitOptions.None).Length - 1 != expected)
+                throw new InvalidOperationException("HTML ページ数が一致しません。");
+            foreach (string extension in new[] { "png", "webp" })
+            {
+                var paths = logical.SavePageImages(Path.Combine(directory, $"{kind}.{extension}"));
+                if (paths.Count != expected)
+                    throw new InvalidOperationException($"{extension} の画像数が一致しません。");
+            }
+            string docxPath = Path.Combine(directory, $"{kind}.docx");
+            logical.SaveAsDocx(docxPath);
+            using (var word = WordprocessingDocument.Open(docxPath, false))
+            {
+                if (word.MainDocumentPart!.Document.Body!.Elements<WordTable>().Count() != expected)
+                    throw new InvalidOperationException("Word の表の数が一致しません。");
+                var error = new OpenXmlValidator().Validate(word).FirstOrDefault();
+                if (error is not null)
+                    throw new InvalidOperationException($"Word 文書の検証エラー: {error.Description}");
+            }
             using var print = logical.ToPrintDocument();
             if (print.PrinterSettings.IsValid)
             {
@@ -99,7 +126,7 @@ internal static class SmokeTest
             }
         }
         TemplateFactory.EnsureTemplates(Path.Combine(directory, "Templates"));
-        File.WriteAllText(Path.Combine(directory, "success.txt"), "Excel / PDF / Windows preview smoke test passed.");
+        File.WriteAllText(Path.Combine(directory, "success.txt"), "Excel / PDF / HTML / PNG / WebP / DOCX / Windows preview smoke test passed.");
     }
 }
 

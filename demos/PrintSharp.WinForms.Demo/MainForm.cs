@@ -1,6 +1,10 @@
+using PrintSharp.Documents;
 using PrintSharp.Excel;
+using PrintSharp.Html;
+using PrintSharp.Image;
 using PrintSharp.Pdf;
 using PrintSharp.Windows;
+using PrintSharp.Word;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Printing;
@@ -29,8 +33,12 @@ public sealed class MainForm : Form
         _report.Items.AddRange(["1. 代码生成宿泊列表", "2. Excel 模板套用列表", "3. 日本酒店领收书（模板）", "4. 日本酒店请求书（模板）", "5. DataSet 数据绑定", "6. 自动分页报表（不同明细行高）", "7. 混合语言备注（中日韩阿拉伯文）"]);
         _report.SelectedIndex = 0;
         tools.Controls.Add(_report);
-        AddButton(tools, "导出 Excel", () => Export(false));
-        AddButton(tools, "导出 PDF", () => Export(true));
+        AddButton(tools, "导出 Excel", () => Export("xlsx", "Excel 工作簿", (document, path) => document.SaveAsExcel(path)));
+        AddButton(tools, "导出 PDF", () => Export("pdf", "PDF 文件", (document, path) => document.SaveAsPdf(path)));
+        AddButton(tools, "导出 HTML", () => Export("html", "HTML 文件", (document, path) => document.SaveAsHtml(path)));
+        AddButton(tools, "导出 PNG", () => ExportImages("png", "PNG 图片"));
+        AddButton(tools, "导出 WebP", () => ExportImages("webp", "WebP 图片"));
+        AddButton(tools, "导出 Word", () => Export("docx", "Word 文档", (document, path) => document.SaveAsDocx(path)));
         AddButton(tools, "打印（生成预览）", GeneratePreview);
         AddButton(tools, "重置 100 行", ResetData);
         AddButton(tools, "打开模板目录", () => { TemplateFactory.EnsureTemplates(); Process.Start(new ProcessStartInfo(TemplateFactory.DirectoryPath) { UseShellExecute = true }); });
@@ -127,7 +135,7 @@ public sealed class MainForm : Form
         ClearPreview();
     }
 
-    private PrintSharp.Documents.Document BuildDocument()
+    private Document BuildDocument()
     {
         return ReportService.Build((ReportKind)_report.SelectedIndex, GetRecords());
     }
@@ -160,18 +168,27 @@ public sealed class MainForm : Form
         _status.Text = $"微服务已生成文件：{dialog.FileName}";
     }
 
-    private void Export(bool pdf)
+    private void Export(string extension, string fileType, Action<Document, string> save)
     {
         var document = BuildDocument();
         using var dialog = new SaveFileDialog
         {
-            Filter = pdf ? "PDF 文件|*.pdf" : "Excel 工作簿|*.xlsx",
-            FileName = $"{(ReportKind)_report.SelectedIndex}-{DateTime.Now:yyyyMMdd-HHmmss}.{(pdf ? "pdf" : "xlsx")}"
+            Filter = $"{fileType}|*.{extension}",
+            FileName = $"{(ReportKind)_report.SelectedIndex}-{DateTime.Now:yyyyMMdd-HHmmss}.{extension}"
         };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        if (pdf) document.SaveAsPdf(dialog.FileName);
-        else document.SaveAsExcel(dialog.FileName);
+        save(document, dialog.FileName);
         _status.Text = $"已导出 {PrintSharp.Layout.GridLayoutEngine.Instance.CalculateDocument(document).PageCount} 页：{dialog.FileName}";
+    }
+
+    private void ExportImages(string extension, string fileType)
+    {
+        var document = BuildDocument();
+        using var dialog = new FolderBrowserDialog { Description = $"选择 {fileType} 的保存目录", UseDescriptionForTitle = true };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        string fileName = $"{(ReportKind)_report.SelectedIndex}-{Guid.NewGuid():N}.{extension}";
+        var paths = document.SavePageImages(Path.Combine(dialog.SelectedPath, fileName));
+        _status.Text = paths.Count > 0 ? $"已导出 {paths.Count} 页，第一页：{paths[0]}" : "没有可导出的页面。";
     }
 
     private void GeneratePreview()

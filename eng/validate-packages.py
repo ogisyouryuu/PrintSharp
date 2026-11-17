@@ -17,6 +17,9 @@ expected = {
     "PrintSharp": "net11.0",
     "PrintSharp.Excel": "net11.0",
     "PrintSharp.Pdf": "net11.0",
+    "PrintSharp.Html": "net11.0",
+    "PrintSharp.Image": "net11.0",
+    "PrintSharp.Word": "net11.0",
     "PrintSharp.Windows": "net11.0-windows",
     "PrintSharp.Preview.AspNetCore": "net11.0",
     "PrintSharp.Preview.Blazor": "net11.0",
@@ -87,8 +90,14 @@ with tempfile.TemporaryDirectory(prefix="printsharp-consumer-") as temp:
     (project / "Program.cs").write_text(
         "using PrintSharp.Documents;\n"
         "using PrintSharp.Fluent;\n"
+        "using PrintSharp.Html;\n"
+        "using PrintSharp.Image;\n"
+        "using PrintSharp.Word;\n"
         "var document = Document.Create(d => d.Title(\"Package smoke test\")"
-        ".Page(\"Page 1\", p => p.Columns(100f).Rows(24f).Cell(\"A1\", \"Works\")));\n",
+        ".Page(\"Page 1\", p => p.Columns(100f).Rows(24f).Cell(\"A1\", \"Works\")));\n"
+        "_ = document.ToHtml();\n"
+        "_ = document.ToPageImages();\n"
+        "_ = document.ToDocxBytes();\n",
         encoding="utf-8",
     )
     config = ET.Element("configuration")
