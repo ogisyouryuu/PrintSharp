@@ -8,6 +8,9 @@
 [![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
 [![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
 [![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
+[![PrintSharp.Html](https://img.shields.io/nuget/v/PrintSharp.Html.svg?label=PrintSharp.Html)](https://www.nuget.org/packages/PrintSharp.Html/)
+[![PrintSharp.Image](https://img.shields.io/nuget/v/PrintSharp.Image.svg?label=PrintSharp.Image)](https://www.nuget.org/packages/PrintSharp.Image/)
+[![PrintSharp.Word](https://img.shields.io/nuget/v/PrintSharp.Word.svg?label=PrintSharp.Word)](https://www.nuget.org/packages/PrintSharp.Word/)
 [![PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg?label=PrintSharp.Windows)](https://www.nuget.org/packages/PrintSharp.Windows/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -15,9 +18,9 @@
 
 </div>
 
-使用一份类 Excel 的网格文档，同时稳定输出为 **Excel**、**PDF** 或 **Windows 打印机**。PrintSharp 以行、列和单元格跨度维护布局，而非自由的 `X` / `Y` 坐标；Excel 网格始终是布局的来源。
+用一份类 Excel 的网格文档导出 **Excel**、**PDF**、**HTML**、**PNG**、**无损 WebP** 或**可编辑的 Word（DOCX）**。浏览器预览和 Windows 打印也使用同一份网格。
 
-> **状态：** 早期库（`0.4.1`）。稳定版本前，公开 API 和渲染行为可能会演进。
+> **状态：** 早期库（`0.5.0`）。稳定版本前，公开 API 和渲染行为可能会演进。
 
 HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
@@ -74,6 +77,9 @@ ClosedXML    SkiaSharp  PrintDocument
 - 基于 ClosedXML 的 Excel 导出与导入
 - Excel 模板占位符绑定和重复行展开
 - 基于 SkiaSharp 的 PDF 导出
+- 可在浏览器查看和打印的独立 HTML
+- 按页导出 PNG 和无损 WebP
+- 可编辑的 DOCX 表格
 - Windows `PrintDocument` 渲染和打印
 - 文本、数值、日期、公式和图片字节数组单元格值
 - 字体、颜色、边框、内边距、对齐、换行和数字格式
@@ -86,6 +92,9 @@ ClosedXML    SkiaSharp  PrintDocument
 dotnet add package PrintSharp
 dotnet add package PrintSharp.Excel
 dotnet add package PrintSharp.Pdf
+dotnet add package PrintSharp.Html
+dotnet add package PrintSharp.Image
+dotnet add package PrintSharp.Word
 dotnet add package PrintSharp.Fonts.NotoSansCjk
 dotnet add package PrintSharp.Windows
 ```
@@ -131,7 +140,7 @@ document.SaveAsExcel("sales-report.xlsx");
 document.SaveAsPdf("sales-report.pdf");
 ```
 
-引用 `PrintSharp.Html` 后，可以将文档导出为独立 HTML，在浏览器中查看和打印。
+引用 `PrintSharp.Html` 后，可以将文档导出为独立 HTML，在浏览器中查看和打印。文字的默认内边距与 PDF 一致。
 
 ```csharp
 using PrintSharp.Html;
@@ -140,7 +149,7 @@ string html = document.ToHtml();
 document.SaveAsHtml("sales-report.html");
 ```
 
-引用 `PrintSharp.Image` 可以把每个物理页导出为一张图。文件名自动加页码，例如 `sales-report-1.webp`。WebP 使用无损压缩，默认分辨率为 144 DPI。
+引用 `PrintSharp.Image` 可以使用与 PDF 相同的绘制计划和字体，将每个物理页导出为一张图。文件名自动加页码，例如 `sales-report-1.webp`。WebP 使用无损压缩，默认分辨率为 144 DPI。
 
 ```csharp
 using PrintSharp.Image;
@@ -228,7 +237,7 @@ Document physicalDocument = document.Paginate();
 
 每个区域的行索引从 0 开始。`Body(Action<PageBuilder>)` 也支持不同的行高和合并单元格。
 已有网格可直接使用 `p.Paginate(headerRowCount: 3, footerRowCount: 1)`，声明页头、页尾行数。
-PDF、Windows 打印和 Excel 导出时自动分页；Excel 默认每个物理页生成一个工作表。
+PDF、HTML、PNG、WebP、DOCX 和 Windows 打印使用计算后的物理页。Excel 默认每个物理页生成一个工作表。
 原始文档不变。`PageValue` 在整个文档分页结束后求值；`BodyRowOffset` 和 `BodyRowCount` 表示当前页明细网格的行范围，一条记录对应一行时可直接用来计算每页小计。
 
 Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settings)` 启用分页。
@@ -239,7 +248,7 @@ Excel 模板使用 `ExcelTemplateParser.Instance.RenderReport(path, data, settin
 行组超过整页可用高度、合并单元格跨越区域边界、列宽超过可打印宽度时明确报错。
 自定义纸张须提供正的宽高。暂不根据文本折行自动测量行高；页尾紧随明细，末页不拉伸行高。
 
-## 0.4.1 的报表输出与公式
+## Excel 报表输出与公式
 
 `ExcelReportLayout.SingleSheet` 为每个逻辑 Report 生成连续工作表，支持打印标题和可选冻结页头。默认 `PerPhysicalPage` 按物理页生成工作表。
 
@@ -308,7 +317,7 @@ PDF 使用 SkiaSharp、随包携带的 Noto 字体和 HarfBuzz 排版。发布�
 dotnet test PrintSharp.slnx
 ```
 
-解决方案包含核心网格/布局、Fluent API、样式、Excel 渲染与模板、PDF 渲染和 Windows 打印适配器的单元测试。
+解决方案包含网格模型、布局、Excel 模板、PDF、HTML、PNG、WebP、DOCX 和 Windows 打印的测试。
 
 ## 许可证
 
@@ -316,7 +325,7 @@ dotnet test PrintSharp.slnx
 
 ## Windows Forms 演示
 
-[WinForms 演示程序](demos/PrintSharp.WinForms.Demo)包含可编辑的 100 行 DataGridView、代码定义和 Excel 模板驱动的报表、日本酒店收据与发票、Excel/PDF 导出及嵌入式打印预览。仅支持在 Windows 上运行：
+[WinForms 演示程序](demos/PrintSharp.WinForms.Demo)包含可编辑的 100 行 DataGridView、代码定义和 Excel 模板驱动的报表、日本酒店收据与发票、Excel、PDF、HTML、PNG、WebP 和 DOCX 导出及嵌入式打印预览。仅支持在 Windows 上运行：
 
 ```bash
 dotnet run --project demos/PrintSharp.WinForms.Demo
@@ -324,11 +333,11 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 
 ## NuGet 与 npm 发布
 
-推送未使用的 `vMAJOR.MINOR.PATCH` 标签，会以同一版本发布 11 个 NuGet 包和 `@printsharp/preview`。NuGet 工作流构建并测试解决方案、验证包内容与消费项目，然后发布到 NuGet.org 和 GitHub Packages；npm 工作流构建预览包并携带 provenance 发布。
+推送未使用的 `vMAJOR.MINOR.PATCH` 标签，会以同一版本发布 14 个 NuGet 包和 `@printsharp/preview`。NuGet 工作流构建并测试解决方案、验证包内容与消费项目，然后发布到 NuGet.org 和 GitHub Packages；npm 工作流构建预览包并携带 provenance 发布。
 
 ```bash
-git tag v0.4.1
-git push origin v0.4.1
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
 两端均使用 Trusted Publishing。配置 `NUGET_USER` 和 NuGet.org 针对 `ogisyouryuu/PrintSharp`、`nuget.yml` 的策略，并在 npm 配置 `npm.yml` trusted publisher。本机不需要 API Key，不要复用已发布的版本号。

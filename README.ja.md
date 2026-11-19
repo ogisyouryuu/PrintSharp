@@ -8,6 +8,9 @@
 [![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
 [![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
 [![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
+[![PrintSharp.Html](https://img.shields.io/nuget/v/PrintSharp.Html.svg?label=PrintSharp.Html)](https://www.nuget.org/packages/PrintSharp.Html/)
+[![PrintSharp.Image](https://img.shields.io/nuget/v/PrintSharp.Image.svg?label=PrintSharp.Image)](https://www.nuget.org/packages/PrintSharp.Image/)
+[![PrintSharp.Word](https://img.shields.io/nuget/v/PrintSharp.Word.svg?label=PrintSharp.Word)](https://www.nuget.org/packages/PrintSharp.Word/)
 [![PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg?label=PrintSharp.Windows)](https://www.nuget.org/packages/PrintSharp.Windows/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -15,9 +18,9 @@
 
 </div>
 
-1 つの Excel ライクなグリッドドキュメントから、**Excel**、**PDF**、または **Windows プリンター**へ一貫して出力します。PrintSharp は自由な `X` / `Y` 座標ではなく、行・列・セル結合でレイアウトを保持します。Excel グリッドが常にレイアウトの基準です。
+1 つの Excel ライクなグリッドドキュメントから、**Excel**、**PDF**、**HTML**、**PNG**、**可逆 WebP**、**編集可能な Word（DOCX）**を出力できます。ブラウザーでのプレビューと Windows 印刷も同じグリッドを使用します。
 
-> **ステータス:** 初期段階のライブラリ（`0.4.1`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
+> **ステータス:** 初期段階のライブラリ（`0.5.0`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
 
 HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
@@ -74,6 +77,9 @@ PrintSharp は Excel と互換性のあるグリッドから開始します。
 - ClosedXML による Excel の出力と読み込み
 - Excel テンプレートのプレースホルダー束縛と繰り返し行の展開
 - SkiaSharp による PDF 出力
+- ブラウザーで表示・印刷できる独立した HTML
+- ページ単位の PNG と可逆 WebP の出力
+- 編集可能な DOCX テーブル
 - Windows `PrintDocument` のレンダリングと印刷
 - テキスト、数値、日付、数式、画像バイト配列のセル値
 - フォント、色、罫線、余白、配置、折り返し、数値書式
@@ -86,6 +92,9 @@ PrintSharp は Excel と互換性のあるグリッドから開始します。
 dotnet add package PrintSharp
 dotnet add package PrintSharp.Excel
 dotnet add package PrintSharp.Pdf
+dotnet add package PrintSharp.Html
+dotnet add package PrintSharp.Image
+dotnet add package PrintSharp.Word
 dotnet add package PrintSharp.Fonts.NotoSansCjk
 dotnet add package PrintSharp.Windows
 ```
@@ -131,7 +140,7 @@ document.SaveAsExcel("sales-report.xlsx");
 document.SaveAsPdf("sales-report.pdf");
 ```
 
-`PrintSharp.Html` を参照すると、ブラウザーで表示・印刷できる単独の HTML 文書を出力できます。
+`PrintSharp.Html` を参照すると、ブラウザーで表示・印刷できる単独の HTML 文書を出力できます。既定の文字余白は PDF と共通です。
 
 ```csharp
 using PrintSharp.Html;
@@ -140,7 +149,7 @@ string html = document.ToHtml();
 document.SaveAsHtml("sales-report.html");
 ```
 
-`PrintSharp.Image` を参照すると、物理ページごとに画像を出力できます。ファイル名には `sales-report-1.webp` のようにページ番号が付きます。WebP は可逆圧縮で、既定の解像度は 144 DPI です。
+`PrintSharp.Image` を参照すると、PDF と同じ描画計画とフォントで、物理ページごとに画像を出力できます。ファイル名には `sales-report-1.webp` のようにページ番号が付きます。WebP は可逆圧縮で、既定の解像度は 144 DPI です。
 
 ```csharp
 using PrintSharp.Image;
@@ -229,7 +238,7 @@ Document physicalDocument = document.Paginate();
 
 各領域の行インデックスは 0 から始まります。`Body(Action<PageBuilder>)` では異なる行高や結合セルも定義できます。
 既存のグリッドには `p.Paginate(headerRowCount: 3, footerRowCount: 1)` で自動改ページを追加できます。
-PDF、Windows 印刷、Excel 出力時に自動的に改ページし、Excel では既定で物理ページごとにワークシートを作成します。
+PDF、HTML、PNG、WebP、DOCX、Windows 印刷では、計算済みの物理ページを使用します。Excel では既定で物理ページごとにワークシートを作成します。
 元のドキュメントは変更しません。`PageValue` は全ページ確定後に評価されます。
 `BodyRowOffset` と `BodyRowCount` はそのページの明細グリッドの行範囲を示し、1 レコード = 1 行の場合は小計の対象レコード範囲として使用できます。
 
@@ -241,7 +250,7 @@ Excel テンプレートは `ExcelTemplateParser.Instance.RenderReport(path, dat
 縦結合した行は一緒に改ページします。行グループが印刷領域に収まらない場合、結合が領域境界を跨ぐ場合、列幅が印刷領域を超える場合はエラーになります。
 任意の用紙には正の幅と高さが必要です。折り返した文字に応じた行高の自動測定は行いません。フッターは明細の直後に配置し、最終ページの行高は引き伸ばしません。
 
-## 0.4.1 の帳票出力と数式
+## Excel 帳票出力と数式
 
 `ExcelReportLayout.SingleSheet` は論理 Report ごとに連続したシートを作成し、印刷タイトルと任意のヘッダー固定に対応します。既定の `PerPhysicalPage` は物理ページごとにシートを作成します。
 
@@ -310,7 +319,7 @@ PDF 出力は SkiaSharp、同梱 Noto フォント、HarfBuzz を使用します
 dotnet test PrintSharp.slnx
 ```
 
-ソリューションには、コアのグリッド／レイアウト、Fluent API、スタイル、Excel レンダリングとテンプレート、PDF レンダリング、Windows 印刷アダプターの単体テストが含まれます。
+ソリューションには、グリッドモデル、レイアウト、Excel テンプレート、PDF、HTML、PNG、WebP、DOCX、Windows 印刷のテストが含まれます。
 
 ## ライセンス
 
@@ -318,7 +327,7 @@ dotnet test PrintSharp.slnx
 
 ## Windows Forms デモ
 
-[WinForms デモ](demos/PrintSharp.WinForms.Demo)には、編集可能な 100 行の DataGridView、コードで定義した帳票と Excel テンプレートを使った帳票、日本のホテルを想定した領収書と請求書、Excel/PDF 出力、埋め込み印刷プレビューが含まれます。Windows で次のコマンドを実行します。
+[WinForms デモ](demos/PrintSharp.WinForms.Demo)には、編集可能な 100 行の DataGridView、コードで定義した帳票と Excel テンプレートを使った帳票、日本のホテルを想定した領収書と請求書、Excel、PDF、HTML、PNG、WebP、DOCX の出力、埋め込み印刷プレビューが含まれます。Windows で次のコマンドを実行します。
 
 ```bash
 dotnet run --project demos/PrintSharp.WinForms.Demo
@@ -326,11 +335,11 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 
 ## NuGet と npm の公開
 
-未使用の `vMAJOR.MINOR.PATCH` タグを push すると、11 個の NuGet パッケージと `@printsharp/preview` を同じバージョンで公開します。NuGet ワークフローはビルド・テスト、パッケージ内容と利用側プロジェクトの検証後、NuGet.org と GitHub Packages に公開します。npm ワークフローはビルドし、provenance 付きで公開します。
+未使用の `vMAJOR.MINOR.PATCH` タグを push すると、14 個の NuGet パッケージと `@printsharp/preview` を同じバージョンで公開します。NuGet ワークフローはビルド・テスト、パッケージ内容と利用側プロジェクトの検証後、NuGet.org と GitHub Packages に公開します。npm ワークフローはビルドし、provenance 付きで公開します。
 
 ```bash
-git tag v0.4.1
-git push origin v0.4.1
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
 両レジストリとも Trusted Publishing を使用します。`NUGET_USER` と NuGet 側の `ogisyouryuu/PrintSharp` / `nuget.yml` ポリシー、npm 側の `npm.yml` trusted publisher を設定してください。ローカル API Key は不要です。公開済みバージョンは再利用しないでください。

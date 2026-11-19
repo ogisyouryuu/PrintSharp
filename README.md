@@ -8,6 +8,9 @@
 [![PrintSharp](https://img.shields.io/nuget/v/PrintSharp.svg?label=PrintSharp)](https://www.nuget.org/packages/PrintSharp/)
 [![PrintSharp.Excel](https://img.shields.io/nuget/v/PrintSharp.Excel.svg?label=PrintSharp.Excel)](https://www.nuget.org/packages/PrintSharp.Excel/)
 [![PrintSharp.Pdf](https://img.shields.io/nuget/v/PrintSharp.Pdf.svg?label=PrintSharp.Pdf)](https://www.nuget.org/packages/PrintSharp.Pdf/)
+[![PrintSharp.Html](https://img.shields.io/nuget/v/PrintSharp.Html.svg?label=PrintSharp.Html)](https://www.nuget.org/packages/PrintSharp.Html/)
+[![PrintSharp.Image](https://img.shields.io/nuget/v/PrintSharp.Image.svg?label=PrintSharp.Image)](https://www.nuget.org/packages/PrintSharp.Image/)
+[![PrintSharp.Word](https://img.shields.io/nuget/v/PrintSharp.Word.svg?label=PrintSharp.Word)](https://www.nuget.org/packages/PrintSharp.Word/)
 [![PrintSharp.Windows](https://img.shields.io/nuget/v/PrintSharp.Windows.svg?label=PrintSharp.Windows)](https://www.nuget.org/packages/PrintSharp.Windows/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ogisyouryuu/PrintSharp/blob/main/LICENSE)
 
@@ -15,9 +18,9 @@
 
 </div>
 
-Create one Excel-like grid document, then render it consistently to **Excel**, **PDF**, or a **Windows printer**. PrintSharp keeps layout in rows, columns, and cell spans—not free-form `X`/`Y` coordinates—so the Excel grid remains the source of truth.
+Create one Excel-like grid document and export it to **Excel**, **PDF**, **HTML**, **PNG**, **lossless WebP**, or **editable Word (DOCX)**. The same grid also drives browser preview and Windows printing.
 
-> **Status:** early-stage library (`0.4.1`). The public API and renderer behavior may evolve before a stable release.
+> **Status:** early-stage library (`0.5.0`). The public API and renderer behavior may evolve before a stable release.
 
 HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
 
@@ -74,6 +77,9 @@ The core model stays renderer-neutral. Renderers map logical dimensions to their
 - Excel export and import through ClosedXML
 - Excel-template placeholder binding, including repeated rows
 - PDF export through SkiaSharp
+- Standalone HTML for browser viewing and printing
+- Per-page PNG and lossless WebP export
+- Editable DOCX tables
 - Windows `PrintDocument` rendering and printing
 - Cell values for text, numbers, dates, formulas, and image byte arrays
 - Fonts, colors, borders, padding, alignment, wrapping, and number formats
@@ -86,6 +92,9 @@ Install the packages for the output targets your application needs:
 dotnet add package PrintSharp
 dotnet add package PrintSharp.Excel
 dotnet add package PrintSharp.Pdf
+dotnet add package PrintSharp.Html
+dotnet add package PrintSharp.Image
+dotnet add package PrintSharp.Word
 dotnet add package PrintSharp.Fonts.NotoSansCjk
 dotnet add package PrintSharp.Windows
 ```
@@ -131,7 +140,7 @@ document.SaveAsExcel("sales-report.xlsx");
 document.SaveAsPdf("sales-report.pdf");
 ```
 
-Reference `PrintSharp.Html` to export a standalone page for browser viewing and printing.
+Reference `PrintSharp.Html` to export a standalone HTML document for browser viewing and printing. Text uses the same default padding as PDF.
 
 ```csharp
 using PrintSharp.Html;
@@ -140,7 +149,7 @@ string html = document.ToHtml();
 document.SaveAsHtml("sales-report.html");
 ```
 
-Reference `PrintSharp.Image` to export one image per physical page. Filenames include the page number, such as `sales-report-1.webp`. WebP uses lossless compression, and the default resolution is 144 DPI.
+Reference `PrintSharp.Image` to export one image per physical page using the same rendering plan and fonts as PDF. Filenames include the page number, such as `sales-report-1.webp`. WebP uses lossless compression, and the default resolution is 144 DPI.
 
 ```csharp
 using PrintSharp.Image;
@@ -228,7 +237,7 @@ Document physicalDocument = document.Paginate();
 
 Each section uses local row indices starting at zero. `Body(Action<PageBuilder>)` also supports variable row heights and merged cells.
 For an existing grid, call `p.Paginate(headerRowCount: 3, footerRowCount: 1)` instead.
-PDF, Windows printing, and Excel export paginate automatically; Excel defaults to one worksheet per physical page.
+PDF, HTML, PNG, WebP, DOCX, and Windows printing use the calculated physical pages. Excel defaults to one worksheet per physical page.
 The source document remains unchanged. `PageValue` resolves after all pages are known; `BodyRowOffset` and `BodyRowCount` identify the current page's body grid rows for subtotals. With one row per record, these also identify the record range.
 
 Excel templates can opt in with `ExcelTemplateParser.Instance.RenderReport(path, data, settings)`.
@@ -240,7 +249,7 @@ Merged row groups stay together. A group larger than the available height, a mer
 Custom paper requires positive width and height. Text wrapping does not automatically measure or increase row height; footers follow the body without stretching the final page.
 
 
-## Report output and formulas in 0.4.1
+## Excel report output and formulas
 
 `ExcelReportLayout.SingleSheet` exports each logical Report as one continuous worksheet, with print titles and optional frozen headers. The default `PerPhysicalPage` creates a worksheet per physical page.
 
@@ -309,7 +318,7 @@ For the complete architecture rationale (Chinese), see [PrintSharp Architecture:
 dotnet test PrintSharp.slnx
 ```
 
-The solution includes unit tests for the core grid/layout model, fluent API, styles, Excel rendering and templates, PDF rendering, and the Windows print-document adapter.
+The solution includes tests for the grid model, layout, Excel templates, PDF, HTML, PNG, WebP, DOCX, and Windows printing.
 
 ## License
 
@@ -317,7 +326,7 @@ Distributed under the [MIT License](https://github.com/ogisyouryuu/PrintSharp/bl
 
 ## Windows Forms demo
 
-The [WinForms demo](https://github.com/ogisyouryuu/PrintSharp/tree/main/demos/PrintSharp.WinForms.Demo) includes an editable 100-row DataGridView, code-built and Excel-template reports, Japanese hotel receipts and invoices, Excel/PDF export, and an embedded Windows print preview. Run it on Windows with:
+The [WinForms demo](https://github.com/ogisyouryuu/PrintSharp/tree/main/demos/PrintSharp.WinForms.Demo) includes an editable 100-row DataGridView, code-built and Excel-template reports, Japanese hotel receipts and invoices, Excel, PDF, HTML, PNG, WebP, and DOCX export, and an embedded Windows print preview. Run it on Windows with:
 
 ```bash
 dotnet run --project demos/PrintSharp.WinForms.Demo
@@ -325,11 +334,11 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 
 ## NuGet and npm publishing
 
-Push an unused `vMAJOR.MINOR.PATCH` tag to publish all 11 NuGet packages and `@printsharp/preview` at the same version. The NuGet workflow builds/tests the solution, validates package contents and a consumer, then publishes to NuGet.org and GitHub Packages. The npm workflow builds and publishes with provenance.
+Push an unused `vMAJOR.MINOR.PATCH` tag to publish all 14 NuGet packages and `@printsharp/preview` at the same version. The NuGet workflow builds/tests the solution, validates package contents and a consumer, then publishes to NuGet.org and GitHub Packages. The npm workflow builds and publishes with provenance.
 
 ```bash
-git tag v0.4.1
-git push origin v0.4.1
+git tag v0.5.0
+git push origin v0.5.0
 ```
 
 Both registries use Trusted Publishing. Configure `NUGET_USER` and the NuGet policy for `ogisyouryuu/PrintSharp`, workflow `nuget.yml`; configure the npm trusted publisher for `npm.yml`. No local API key is required. Never reuse a published version.
