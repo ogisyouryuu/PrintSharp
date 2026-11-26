@@ -20,7 +20,7 @@
 
 用一份类 Excel 的网格文档导出 **Excel**、**PDF**、**HTML**、**PNG**、**无损 WebP** 或**可编辑的 Word（DOCX）**。浏览器预览和 Windows 打印也使用同一份网格。
 
-> **状态：** 早期库（`0.5.0`）。稳定版本前，公开 API 和渲染行为可能会演进。
+> **状态：** 早期库（`0.5.1`）。稳定版本前，公开 API 和渲染行为可能会演进。
 
 HTTP 微服务：[PrintSharp.Api](src/PrintSharp.Api/README.md) 支持 Base64 或 multipart 上传 Excel 模板、类型化 JSON 多表数据，并返回 PDF 或 XLSX 文件。运行命令：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
@@ -336,8 +336,8 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 推送未使用的 `vMAJOR.MINOR.PATCH` 标签，会以同一版本发布 14 个 NuGet 包和 `@printsharp/preview`。NuGet 工作流构建并测试解决方案、验证包内容与消费项目，然后发布到 NuGet.org 和 GitHub Packages；npm 工作流构建预览包并携带 provenance 发布。
 
 ```bash
-git tag v0.5.0
-git push origin v0.5.0
+git tag v0.5.1
+git push origin v0.5.1
 ```
 
 两端均使用 Trusted Publishing。配置 `NUGET_USER` 和 NuGet.org 针对 `ogisyouryuu/PrintSharp`、`nuget.yml` 的策略，并在 npm 配置 `npm.yml` trusted publisher。本机不需要 API Key，不要复用已发布的版本号。

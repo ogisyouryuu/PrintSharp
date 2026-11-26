@@ -17,13 +17,16 @@ public sealed class GridLayoutEngine : ILayoutEngine
 
     /// <inheritdoc/>
     public CalculatedDocumentLayout CalculateDocument(Document document)
+        => CalculateDocument(document, usePointRowHeights: false);
+
+    internal CalculatedDocumentLayout CalculateDocument(Document document, bool usePointRowHeights)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         var calculatedPages = new List<CalculatedPageLayout>(document.Pages.Count);
-        foreach (var page in DocumentPaginator.Instance.Paginate(document).Pages)
+        foreach (var page in DocumentPaginator.Instance.Paginate(document, usePointRowHeights).Pages)
         {
-            calculatedPages.Add(CalculatePage(page));
+            calculatedPages.Add(CalculatePage(page, usePointRowHeights));
         }
 
         return new CalculatedDocumentLayout(document, calculatedPages);
@@ -31,6 +34,9 @@ public sealed class GridLayoutEngine : ILayoutEngine
 
     /// <inheritdoc/>
     public CalculatedPageLayout CalculatePage(Page page)
+        => CalculatePage(page, usePointRowHeights: false);
+
+    internal CalculatedPageLayout CalculatePage(Page page, bool usePointRowHeights)
     {
         ArgumentNullException.ThrowIfNull(page);
 
@@ -72,7 +78,7 @@ public sealed class GridLayoutEngine : ILayoutEngine
         {
             rowYOffsets[r] = currentY;
             float h = rowLookup.TryGetValue(r, out var rowDef)
-                ? (rowDef.IsHidden ? 0f : rowDef.Height)
+                ? rowDef.GetLayoutHeight(usePointRowHeights)
                 : settings.DefaultRowHeight;
             rowHeights[r] = h;
             currentY += h;

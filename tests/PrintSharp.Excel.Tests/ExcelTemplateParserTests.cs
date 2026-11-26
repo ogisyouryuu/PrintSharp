@@ -97,6 +97,47 @@ public class ExcelTemplateParserTests
         Assert.Equal("Generated Name", document.DefaultPage.FindCell(0, 0)?.Value);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0.5f)]
+    public void ExcelTemplate_UsesOriginalRowHeightsInPdfAndPreservesExcelRoundTrip(float? rowHeightScale)
+    {
+        var options = rowHeightScale is { } scale ? new ExcelRenderOptions { RowHeightScale = scale } : null;
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.AddWorksheet("Sheet1");
+        sheet.Column(1).Width = 20;
+        sheet.Row(1).Height = 22;
+        sheet.Row(2).Height = 165;
+        sheet.Range("A1:A2").Style.Fill.BackgroundColor = XLColor.LightGray;
+        sheet.Range("A1:A2").Style.Font.FontSize = 11;
+        sheet.Cell("A1").Value = "Title";
+        sheet.Cell("A2").Value = "{{Items.Name}}";
+        sheet.Cell("A2").Style.Alignment.WrapText = true;
+        using var template = new MemoryStream();
+        workbook.SaveAs(template);
+        template.Position = 0;
+
+        var lines = string.Join('\n', Enumerable.Repeat("Detail line", 11));
+        var document = ExcelTemplateParser.Instance.Render(template,
+            new { Items = new[] { new { Name = lines }, new { Name = lines } } }, options);
+        document.DefaultPage.Settings = document.DefaultPage.Settings with { Margins = PaddingSpec.Zero };
+
+        var preview = Assert.Single(SkiaPdfRenderer.Instance.CreatePreview(document).Pages);
+        var rowBands = preview.Commands.Where(c => c.Op == "fillRect").Select(c => c.Values!).ToArray();
+        Assert.Equal(new[] { 22f, 165f, 165f }, rowBands.Select(rect => rect[3]));
+        Assert.Equal(new[] { 0f, 22f, 187f }, rowBands.Select(rect => rect[1]));
+        var glyphs = preview.Commands.Where(c => c.Op == "glyphRun").SelectMany(c => c.Glyphs!).ToArray();
+        Assert.NotEmpty(glyphs);
+        Assert.All(glyphs, glyph => Assert.Equal(11f, glyph.Size));
+
+        using var pdf = SkiaPdfRenderer.Instance.RenderToDocument(document);
+        Assert.Equal(352f, Assert.Single(pdf.Pages).Height);
+        using var output = document.ToExcelWorkbook(options);
+        Assert.Equal(22d, output.Worksheet(1).Row(1).Height, 4);
+        Assert.Equal(165d, output.Worksheet(1).Row(2).Height, 4);
+        Assert.Equal(165d, output.Worksheet(1).Row(3).Height, 4);
+    }
+
     [Fact]
     public void ExcelTemplateParser_ShouldBindNestedDictionariesAndDictionaryCollectionRows()
     {

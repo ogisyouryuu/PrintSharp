@@ -20,7 +20,7 @@
 
 Create one Excel-like grid document and export it to **Excel**, **PDF**, **HTML**, **PNG**, **lossless WebP**, or **editable Word (DOCX)**. The same grid also drives browser preview and Windows printing.
 
-> **Status:** early-stage library (`0.5.0`). The public API and renderer behavior may evolve before a stable release.
+> **Status:** early-stage library (`0.5.1`). The public API and renderer behavior may evolve before a stable release.
 
 HTTP microservice: [PrintSharp.Api](src/PrintSharp.Api/README.md) accepts Base64 or multipart XLSX templates and typed JSON tables, returning PDF or XLSX files. Run `dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`.
 
@@ -337,8 +337,8 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 Push an unused `vMAJOR.MINOR.PATCH` tag to publish all 14 NuGet packages and `@printsharp/preview` at the same version. The NuGet workflow builds/tests the solution, validates package contents and a consumer, then publishes to NuGet.org and GitHub Packages. The npm workflow builds and publishes with provenance.
 
 ```bash
-git tag v0.5.0
-git push origin v0.5.0
+git tag v0.5.1
+git push origin v0.5.1
 ```
 
 Both registries use Trusted Publishing. Configure `NUGET_USER` and the NuGet policy for `ogisyouryuu/PrintSharp`, workflow `nuget.yml`; configure the npm trusted publisher for `npm.yml`. No local API key is required. Never reuse a published version.

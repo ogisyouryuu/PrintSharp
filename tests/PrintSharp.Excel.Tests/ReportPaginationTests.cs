@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using PrintSharp.Documents;
 using PrintSharp.Fluent;
+using PrintSharp.Pdf;
 using PrintSharp.Styles;
 using Xunit;
 
@@ -45,6 +46,10 @@ public class ReportPaginationTests
             Assert.Equal("Subtotal: 7", output.Worksheet(3).Cell("A3").GetString());
             Assert.Equal(10d / 72, output.Worksheet(1).PageSetup.Margins.Top, 6);
             Assert.Equal(1, output.Worksheet(1).PageSetup.PagesTall);
+            var preview = SkiaPdfRenderer.Instance.CreatePreview(document);
+            Assert.Equal(2, preview.Pages.Count);
+            Assert.Contains(preview.Pages[0].TextRegions, region => region.Text == "Page 1/2");
+            Assert.Contains(preview.Pages[0].TextRegions, region => region.Text == "Subtotal: 10");
             Assert.Equal(1, document.PageCount);
             // 原有 Render 不主动分页，且普通数据绑定仍可单独使用。
             var legacy = ExcelTemplateParser.Instance.Render(path, new { Items = items, Label = "All", Total = 28 });

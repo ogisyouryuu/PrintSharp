@@ -20,7 +20,7 @@
 
 1 つの Excel ライクなグリッドドキュメントから、**Excel**、**PDF**、**HTML**、**PNG**、**可逆 WebP**、**編集可能な Word（DOCX）**を出力できます。ブラウザーでのプレビューと Windows 印刷も同じグリッドを使用します。
 
-> **ステータス:** 初期段階のライブラリ（`0.5.0`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
+> **ステータス:** 初期段階のライブラリ（`0.5.1`）です。安定版リリースまで、公開 API とレンダリング動作は変更される可能性があります。
 
 HTTP マイクロサービス：[PrintSharp.Api](src/PrintSharp.Api/README.md) は Base64 または multipart で Excel テンプレートを受け取り、型付き JSON テーブルを使って PDF / XLSX ファイルを返します。起動コマンド：`dotnet run --project src/PrintSharp.Api --urls http://127.0.0.1:5080`。
 
@@ -338,8 +338,8 @@ dotnet run --project demos/PrintSharp.WinForms.Demo
 未使用の `vMAJOR.MINOR.PATCH` タグを push すると、14 個の NuGet パッケージと `@printsharp/preview` を同じバージョンで公開します。NuGet ワークフローはビルド・テスト、パッケージ内容と利用側プロジェクトの検証後、NuGet.org と GitHub Packages に公開します。npm ワークフローはビルドし、provenance 付きで公開します。
 
 ```bash
-git tag v0.5.0
-git push origin v0.5.0
+git tag v0.5.1
+git push origin v0.5.1
 ```
 
 両レジストリとも Trusted Publishing を使用します。`NUGET_USER` と NuGet 側の `ogisyouryuu/PrintSharp` / `nuget.yml` ポリシー、npm 側の `npm.yml` trusted publisher を設定してください。ローカル API Key は不要です。公開済みバージョンは再利用しないでください。

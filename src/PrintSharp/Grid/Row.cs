@@ -46,6 +46,12 @@ public sealed class Row
     /// </summary>
     public bool IsHidden { get; set; }
 
+    // Excel 由来の論理行高を元のポイント値に戻すための係数です。
+    internal float PointHeightScale { get; init; } = 1f;
+
+    internal float GetLayoutHeight(bool usePointRowHeights)
+        => IsHidden ? 0f : usePointRowHeights ? Height * PointHeightScale : Height;
+
     /// <summary>
     /// 初始化 <see cref="Row"/> 类的新实例。
     /// </summary>

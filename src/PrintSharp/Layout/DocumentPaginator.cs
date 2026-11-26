@@ -12,6 +12,9 @@ public sealed class DocumentPaginator
 
     /// <summary>生成可直接导出的物理页文档；跨行合并单元格保持完整。</summary>
     public Document Paginate(Document document)
+        => Paginate(document, usePointRowHeights: false);
+
+    internal Document Paginate(Document document, bool usePointRowHeights)
     {
         ArgumentNullException.ThrowIfNull(document);
         if (document.Pages.All(p => p.Pagination is null && p.Cells.All(c => !IsDeferred(c.Value))))
@@ -41,7 +44,7 @@ public sealed class DocumentPaginator
                 if ((cell.Row < header && end > header) || (cell.Row < bodyEnd && end > bodyEnd))
                     throw new InvalidOperationException("A merged cell crosses a header/body/footer boundary.");
             }
-            var heights = GetRowHeights(source, rowCount);
+            var heights = GetRowHeights(source, rowCount, usePointRowHeights);
             var (width, height) = source.Settings.GetPaperSize();
             if (source.Settings.PaperKind != PaperKind.Customer && source.Settings.Orientation == PageOrientation.Landscape)
                 (width, height) = (height, width);
@@ -79,7 +82,7 @@ public sealed class DocumentPaginator
                 var rows = Enumerable.Range(0, header).Concat(Enumerable.Range(start, end - start))
                     .Concat(Enumerable.Range(bodyEnd, footer));
                 var target = CopyPage(source, rows);
-                var bounds = GridLayoutEngine.Instance.CalculatePage(target);
+                var bounds = GridLayoutEngine.Instance.CalculatePage(target, usePointRowHeights);
                 if (!float.IsFinite(bounds.ContentWidth) || bounds.ContentWidth > width - margins.Left - margins.Right + 0.001f)
                     throw new InvalidOperationException("Report columns exceed the printable page width.");
                 contexts.Add((source, target, start - header, end - start));
@@ -154,14 +157,14 @@ public sealed class DocumentPaginator
         page.Rows.Count == 0 ? 0 : page.Rows.Max(r => checked(r.Index + 1)),
         page.Cells.Count == 0 ? 0 : page.Cells.Max(c => checked(c.Row + c.RowSpan)));
 
-    private static float[] GetRowHeights(Page page, int count)
+    private static float[] GetRowHeights(Page page, int count, bool usePointRowHeights)
     {
         var lookup = page.Rows.ToDictionary(r => r.Index);
         var heights = new float[count];
         for (int r = 0; r < count; r++)
         {
             heights[r] = lookup.TryGetValue(r, out var row)
-                ? (row.IsHidden ? 0 : row.Height) : page.Settings.DefaultRowHeight;
+                ? row.GetLayoutHeight(usePointRowHeights) : page.Settings.DefaultRowHeight;
             if (!float.IsFinite(heights[r]) || heights[r] < 0)
                 throw new InvalidOperationException("Pagination requires finite nonnegative row heights.");
         }
@@ -176,7 +179,11 @@ public sealed class DocumentPaginator
         var map = rows.Select((original, index) => (original, index)).ToDictionary(p => p.original, p => p.index);
         foreach (var row in source.Rows)
             if (map.TryGetValue(row.Index, out int index))
-                target.Rows.Add(new Row(index, row.Height, row.DefaultStyle) { IsHidden = row.IsHidden });
+                target.Rows.Add(new Row(index, row.Height, row.DefaultStyle)
+                {
+                    IsHidden = row.IsHidden,
+                    PointHeightScale = row.PointHeightScale
+                });
         foreach (var cell in source.Cells)
             if (map.TryGetValue(cell.Row, out int index))
                 target.Cells.Add(new Cell(index, cell.Column, cell.Value, cell.RowSpan, cell.ColumnSpan, cell.Type, cell.Style));

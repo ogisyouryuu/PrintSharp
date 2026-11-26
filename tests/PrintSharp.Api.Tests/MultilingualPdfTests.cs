@@ -80,6 +80,7 @@ public sealed class MultilingualPdfTests : IClassFixture<WebApplicationFactory<P
             byte[] bytes = await response.Content.ReadAsByteArrayAsync();
             using var pdf = UglyToad.PdfPig.PdfDocument.Open(bytes);
             Assert.Equal(1, pdf.NumberOfPages);
+            Assert.Equal(140d, pdf.GetPage(1).Height, 2);
             string content = Encoding.Latin1.GetString(bytes);
             Assert.Contains("NotoSansArabic", content);
             Assert.Contains("/FontFile2", content);

@@ -60,7 +60,7 @@ public sealed class SkiaPdfRenderer
             output.Write(snapshot.ToPdfBytes());
             return snapshot.Pages.Select(p => new RenderedPdfPage(p.Width, p.Height)).ToList().AsReadOnly();
         }
-        var layout = GridLayoutEngine.Instance.CalculateDocument(document);
+        var layout = GridLayoutEngine.Instance.CalculateDocument(document, usePointRowHeights: true);
         var metadata = document.Metadata;
         var pdfMetadata = SKDocumentPdfMetadata.Default;
         pdfMetadata.Title = metadata.Title;
@@ -108,7 +108,7 @@ public sealed class SkiaPdfRenderer
         if (!float.IsFinite(scale) || scale <= 0) throw new ArgumentOutOfRangeException(nameof(options));
         if ((options.TextRenderer ?? DefaultText.Value) is not IDisplayListTextRenderer textRenderer)
             throw new NotSupportedException("Preview requires IDisplayListTextRenderer.");
-        var layout = GridLayoutEngine.Instance.CalculateDocument(document);
+        var layout = GridLayoutEngine.Instance.CalculateDocument(document, usePointRowHeights: true);
         var resources = new Dictionary<string, DisplayResource>();
         var glyphCache = new Dictionary<(SKTypeface, ushort, float), string>();
         var pages = new List<DisplayPage>();

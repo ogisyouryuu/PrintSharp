@@ -38,6 +38,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="11.0.100" PrivateAssets="all" />
+		<InternalsVisibleTo Include="PrintSharp.Excel" />
+		<InternalsVisibleTo Include="PrintSharp.Pdf" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -20,20 +20,23 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
     private readonly HttpClient _client;
     private readonly WebApplicationFactory<Program> _factory;
     public PreviewApiTests(WebApplicationFactory<Program> factory) => (_factory, _client) = (factory, factory.CreateClient());
-    private static PrintRequest Request()
+    private static PrintRequest Request(double? rowHeight = null)
     {
         using var book = new XLWorkbook();
-        book.AddWorksheet("Preview").Cell("A1").Value = "{{T.Value}}";
+        var sheet = book.AddWorksheet("Preview");
+        if (rowHeight is { } height) sheet.Row(1).Height = height;
+        sheet.Cell("A1").Value = "{{T.Value}}";
         using var stream = new MemoryStream(); book.SaveAs(stream);
         return new(new(Convert.ToBase64String(stream.ToArray())), AdapterTests.Input("decimal", "{\"Value\":1234.5}", format: "#,##0.00"));
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task SnapshotCanBeReadCachedDownloadedAndDeleted(bool upload)
+    [InlineData(false, null, 55)]
+    [InlineData(false, 165d, 205)]
+    [InlineData(true, 165d, 205)]
+    public async Task SnapshotCanBeReadCachedDownloadedAndDeleted(bool upload, double? rowHeight, int pageHeight)
     {
-        var request = Request();
+        var request = Request(rowHeight);
         HttpResponseMessage created;
         if (upload)
         {
@@ -53,6 +56,7 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
         Assert.Equal(manifest.GetProperty("revision").GetString(), page.GetProperty("revision").GetString());
         Assert.NotEmpty(page.GetProperty("resources").EnumerateObject());
         Assert.Equal("pt", page.GetProperty("page").GetProperty("unit").GetString());
+        Assert.Equal((float)pageHeight, page.GetProperty("page").GetProperty("height").GetSingle());
         using var conditional = new HttpRequestMessage(HttpMethod.Get, url + "/pages/1");
         conditional.Headers.IfNoneMatch.Add(response.Headers.ETag!);
         Assert.Equal(HttpStatusCode.NotModified, (await _client.SendAsync(conditional)).StatusCode);
@@ -77,6 +81,7 @@ public sealed class PreviewApiTests : IClassFixture<WebApplicationFactory<Progra
         Assert.Equal(HttpStatusCode.NotModified, (await _client.SendAsync(textConditional)).StatusCode);
         var pdf = await _client.GetByteArrayAsync(url + "/pdf");
         using var parsed = UglyToad.PdfPig.PdfDocument.Open(pdf);
+        Assert.Equal((double)pageHeight, parsed.GetPage(1).Height, 2);
         Assert.Contains("1,234.50", parsed.GetPage(1).Text);
         Assert.Equal(HttpStatusCode.NoContent, (await _client.DeleteAsync(url)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync(url)).StatusCode);

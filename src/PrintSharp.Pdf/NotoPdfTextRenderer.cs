@@ -54,16 +54,18 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTe
             VerticalAlignment.Middle => (content.Height - block.MeasuredHeight) / 2,
             _ => 0
         };
+        // 複数行が収まらない場合は、先頭行から表示します。
+        if (block.Lines.Count > 1) offset = Math.Max(0, offset);
         if (style.WrapText && style.HorizontalAlignment == HorizontalAlignment.Justify)
             JustifyLines(block, content.Width);
-        builder.SetTextBoxes(SelectionBoxes(block, text, content, Math.Max(0, offset)));
+        builder.SetTextBoxes(SelectionBoxes(block, text, content, offset));
         builder.Add(new("save"));
         builder.Add(new("clipRect") { Values = [content.X, content.Y, content.Width, content.Height] });
         foreach (var run in block.FontRuns.Where(r => r.RunKind != FontRunKind.TrailingWhitespace && r.Glyphs.Length > 0))
         {
             var positions = run.GlyphPositions.ToArray();
             for (int i = 0; i < positions.Length; i++)
-                positions[i] = new(positions[i].X + content.X, positions[i].Y + content.Y + Math.Max(0, offset));
+                positions[i] = new(positions[i].X + content.X, positions[i].Y + content.Y + offset);
             // PDF の ToUnicode を字形番号から推測せず、元の UTF-8 とクラスタを保持します。
             var codePoints = run.CodePoints.ToArray();
             var utf8 = new List<byte>();
@@ -77,7 +79,7 @@ public sealed class NotoPdfTextRenderer(NotoFontRegistry fonts) : IDisplayListTe
             builder.DrawGlyphRun(run.Typeface, run.Style.FontSize, font.Italic ? -0.2f : 0,
                 run.Glyphs.ToArray(), positions, run.Style.TextColor, utf8.ToArray(), clusters);
             using var skFont = new SKFont(run.Typeface, run.Style.FontSize);
-            float baseline = content.Y + Math.Max(0, offset) + run.Line.YCoord + run.Line.BaseLine;
+            float baseline = content.Y + offset + run.Line.YCoord + run.Line.BaseLine;
             using var paint = new SKPaint { Color = run.Style.TextColor };
             if (run.Style.Underline != UnderlineStyle.None)
             {

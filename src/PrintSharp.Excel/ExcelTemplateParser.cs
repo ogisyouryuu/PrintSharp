@@ -136,7 +136,7 @@ public sealed partial class ExcelTemplateParser
         {
             var xlRow = ws.Row(r);
             float height = (float)(xlRow.Height / options.RowHeightScale);
-            page.Rows.Add(new Row(r - 1, height) { IsHidden = xlRow.IsHidden });
+            page.Rows.Add(new Row(r - 1, height) { IsHidden = xlRow.IsHidden, PointHeightScale = options.RowHeightScale });
         }
 
         // 3. 构建合并单元格映射表
@@ -385,26 +385,30 @@ public sealed partial class ExcelTemplateParser
 
         for (int r = 0; r <= maxTemplateRow; r++)
         {
+            var templateRow = rowLookup.GetValueOrDefault(r);
             if (!compiledPage.Rows.TryGetValue(r, out var cellsInRow) || cellsInRow.Count == 0)
             {
-                if (rowLookup.TryGetValue(r, out var rDef))
+                if (templateRow is not null)
                 {
-                    newPage.Rows.Add(new Row(targetRow, rDef.Height, rDef.DefaultStyle));
+                    newPage.Rows.Add(new Row(targetRow, templateRow.Height, templateRow.DefaultStyle)
+                    {
+                        PointHeightScale = templateRow.PointHeightScale
+                    });
                 }
                 targetRow++;
                 continue;
             }
 
+            float rowHeight = templateRow?.Height ?? templatePage.Settings.DefaultRowHeight;
+            float pointHeightScale = templateRow?.PointHeightScale ?? 1f;
             // 检查该行是否包含集合重复占位符（例如包含 "Items.Name" 且 data 中具有 Items 集合）
             var collectionRef = FindCollectionReference(cellsInRow, data);
             if (collectionRef is not null)
             {
                 var (collectionName, items) = collectionRef.Value;
-                float rowHeight = rowLookup.TryGetValue(r, out var rDef) ? rDef.Height : templatePage.Settings.DefaultRowHeight;
-
                 foreach (var item in items)
                 {
-                    newPage.Rows.Add(new Row(targetRow, rowHeight));
+                    newPage.Rows.Add(new Row(targetRow, rowHeight) { PointHeightScale = pointHeightScale });
                     foreach (var compiledCell in cellsInRow)
                     {
                         var boundCell = BindCellWithItemContext(compiledCell, targetRow, item, collectionName, data);
@@ -416,8 +420,7 @@ public sealed partial class ExcelTemplateParser
             else
             {
                 // 普通行，替换普通占位符
-                float rowHeight = rowLookup.TryGetValue(r, out var rDef) ? rDef.Height : templatePage.Settings.DefaultRowHeight;
-                newPage.Rows.Add(new Row(targetRow, rowHeight));
+                newPage.Rows.Add(new Row(targetRow, rowHeight) { PointHeightScale = pointHeightScale });
 
                 foreach (var compiledCell in cellsInRow)
                 {
