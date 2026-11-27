@@ -37,6 +37,7 @@ export default defineConfig({
       { text: 'API 参考', link: '/api-reference/' },
       { text: '使用示例', link: '/examples/' },
       { text: '部署运维', link: '/operations/' },
+      { text: 'NuGet v0.5.1', link: 'https://www.nuget.org/packages/PrintSharp' },
     ],
     sidebar: {
       '/getting-started/': [{ text: '开始使用', items: gettingStarted }],
